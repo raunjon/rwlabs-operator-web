@@ -193,6 +193,28 @@ describe('accepting an invitation', () => {
     expect(within(alert).getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')
   })
 
+  it('re-checks a consumed invitation when the user comes back to the page', async () => {
+    // Accept succeeds (the invite is now used), the sign-in fails, the user follows "Sign in", then presses Back.
+    let lookups = 0
+    lookupReturns(() => (++lookups === 1 ? HttpResponse.json({ data: invite, success: true }) : notFound()))
+    acceptAnswers(accepted)
+    server.use(http.post('*/auth/api/login', () => HttpResponse.error()))
+    const router = renderApp(PAGE)
+    await screen.findByRole('heading', { name: 'Join Acme Events' })
+    await fillForm()
+    await submit()
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(CREATED_NOT_SIGNED_IN_MESSAGE)
+
+    await userEvent.click(within(alert).getByRole('link', { name: 'Sign in' }))
+    await screen.findByRole('heading', { name: 'Sign in' })
+    router.history.back()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(INVITATION_INVALID_MESSAGE)
+    expect(screen.queryByRole('button', { name: 'Create account' })).not.toBeInTheDocument()
+    expect(lookups).toBe(2)
+  })
+
   it('disables the form while the account is being created', async () => {
     lookupReturns()
     acceptAnswers(async () => {

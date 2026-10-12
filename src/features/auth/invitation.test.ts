@@ -53,6 +53,26 @@ describe('acceptInvitation', () => {
     expect(currentSession()).toEqual(session)
   })
 
+  it('reports the acceptance as soon as the account exists, even if the sign-in then fails', async () => {
+    const events: string[] = []
+    server.use(
+      http.post('*/auth/api/invitations/accept', () => accepted()),
+      http.post('*/auth/api/login', () => {
+        events.push('login')
+        return HttpResponse.error()
+      }),
+    )
+    await expect(acceptInvitation(acceptance, () => events.push('accepted'))).rejects.toBeInstanceOf(SignedUpNotSignedInError)
+    expect(events).toEqual(['accepted', 'login'])
+  })
+
+  it('does not report an acceptance the server refused', async () => {
+    let reported = false
+    server.use(http.post('*/auth/api/invitations/accept', () => envelope(409, 'An account with this email already exists')))
+    await expect(acceptInvitation(acceptance, () => (reported = true))).rejects.toBeInstanceOf(ApiError)
+    expect(reported).toBe(false)
+  })
+
   it('does not sign in when the acceptance is refused', async () => {
     let loginCalled = false
     server.use(

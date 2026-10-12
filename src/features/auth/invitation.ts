@@ -1,4 +1,4 @@
-import { queryOptions, useMutation } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ApiError } from '@/lib/api/errors'
 import type { PanelSession } from '@/lib/session/session'
 import { NO_RESPONSE, requestAcceptInvitation, requestInvitationLookup, type InvitationAcceptance } from './api'
@@ -25,10 +25,15 @@ export function invitationLookupQuery(token: string) {
 }
 
 // Creates the invitee's account, then signs it in with the invitation's email and the new password (accept
-// returns no gateway JWT, see requestAcceptInvitation). A role the panel doesn't support yet is reported as
-// such: the account exists, the invitee just can't use this panel with it (OW-3's role gate).
-export async function acceptInvitation(acceptance: InvitationAcceptance & { email: string }): Promise<PanelSession> {
+// returns no gateway JWT, see requestAcceptInvitation). onAccepted runs as soon as the account exists, whatever
+// the sign-in then does: from that point the invitation is used up. A role the panel doesn't support yet is
+// reported as such: the account exists, the invitee just can't use this panel with it (OW-3's role gate).
+export async function acceptInvitation(
+  acceptance: InvitationAcceptance & { email: string },
+  onAccepted: () => void = () => {},
+): Promise<PanelSession> {
   await requestAcceptInvitation(acceptance)
+  onAccepted()
   try {
     return await signIn(acceptance.email, acceptance.password)
   } catch (error) {
@@ -70,6 +75,15 @@ export function roleLabel(role: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1)
 }
 
+// Once accepted, the cached lookup no longer describes a usable invitation: it is marked stale (not refetched,
+// so the page can still explain a failed follow-up sign-in) and any later visit, Back included, asks the server
+// again and gets the invalid state.
 export function useAcceptInvitation() {
-  return useMutation({ mutationFn: acceptInvitation })
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (acceptance: InvitationAcceptance & { email: string }) =>
+      acceptInvitation(acceptance, () =>
+        queryClient.invalidateQueries({ queryKey: invitationLookupQuery(acceptance.token).queryKey, refetchType: 'none' }),
+      ),
+  })
 }
