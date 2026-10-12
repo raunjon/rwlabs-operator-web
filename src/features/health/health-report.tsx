@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
@@ -91,16 +92,13 @@ export function HealthReport() {
   )
 }
 
+const STATUS_BADGES = { ok: 'success', degraded: 'warning', unreachable: 'destructive' } as const
+
 function StatusBadge({ status }: { status: GatewayHealth }) {
   return (
-    <span
-      className={cn(
-        'rounded-md border px-2 py-0.5 text-sm font-medium',
-        status === 'ok' ? 'border-success text-success' : 'border-destructive text-destructive',
-      )}
-    >
+    <Badge variant={STATUS_BADGES[status]} className="text-sm">
       {STATUS_LABELS[status]}
-    </span>
+    </Badge>
   )
 }
 
