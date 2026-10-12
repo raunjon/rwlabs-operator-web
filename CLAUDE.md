@@ -66,10 +66,12 @@ Docker is staging/production only: don't build images locally.
 - **Session** (`src/lib/session/`): the gateway JWT is in `sessionStorage` (`session_jwt`) and the in-memory store
   only. Never copy it into React state, props, URLs or logs; `Session` deliberately has no token field, and only the
   API layer reads it via `sessionToken()`. Feature requests go through the `api` client, whose middleware adds
-  `X-Jwt-Token` and ends the session on a 401. Calls made before there is a session (login, logout, signup,
-  invitation lookup and accept) go through `requestWithoutSession` in `src/features/auth/api.ts` with `fetch` +
-  `buildUrl`: the gateway's OpenAPI doesn't describe their bodies or `?jwt=true`/`?token=`, and they must not end a
-  session on 401.
+  `X-Jwt-Token` and ends the session on a 401. Calls made before there is a session (login, signup, invitation
+  lookup and accept) go through `requestWithoutSession` in `src/features/auth/api.ts` with `fetch` + `buildUrl`:
+  the gateway's OpenAPI doesn't describe their bodies or `?jwt=true`/`?token=`, and they must not end a session on
+  401. Logout is the deliberate exception: `requestSignOut` runs after `endSession` has already cleared the local
+  session, so it does its own `fetch` to send the old JWT, uses `keepalive` so the request survives a reload, and
+  never rejects. Don't route it through a helper that throws.
 - **Only login returns a gateway JWT** (`?jwt=true`). The gateway's signup and invitation-accept routes answer 201
   with auth's raw token digest in `data.token`, which the panel can't turn into a session. `signUp` and
   `acceptInvitation` (`src/features/auth/`) ignore that digest and sign in with the same email and password right

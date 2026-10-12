@@ -34,9 +34,12 @@ environment, so focus on those, not style.
   can't carry the auth header.
 - **Errors become `ApiError` via `toApiError`.** Flag code that reads `response.json().error.message` by hand, or
   shows raw HTML error bodies (nginx/Vite proxy pages) to users.
-- **Calls made before there is a session** (login, logout, signup, invitation lookup and accept) go through
+- **Calls made before there is a session** (login, signup, invitation lookup and accept) go through
   `requestWithoutSession` in `src/features/auth/api.ts`. Flag a new pre-session call made with the `api` client
-  (it would attach a session token and end the session on 401) or with a hand-rolled fetch elsewhere.
+  (it would attach a session token and end the session on 401) or with a hand-rolled fetch elsewhere. Logout is
+  the deliberate exception: `requestSignOut` has its own `fetch` because it runs after the local session is
+  cleared, must send the old JWT, uses `keepalive` and swallows failures. Don't flag it, and flag a change that
+  moves it onto a helper that throws or that sends it before `endSession`.
 - **Server validation errors are one joined message, not per field** (presentable gem) and show at form level.
   Browser-side checks (the zod schemas in `src/features/auth/*-schema.ts`, built from `form-rules.ts`) are per
   field. Flag code that pretends to map server messages onto fields, a browser rule that differs from auth's
