@@ -150,6 +150,7 @@ tabbing through `/style-guide`.
 | `Table` | `TableHeader`, `TableBody`, `TableFooter`, `TableRow`, `TableHead`, `TableCell`, `TableCaption`. Body rows use `accent` on hover/selection; header rows don't |
 | `Input`, `Textarea`, `Label` | Form fields, bordered with `input`. Set `aria-invalid` for the error state; pair `Label` and field with `htmlFor`/`id` |
 | `Field` | `Label` + one control + optional `hint` and `error` (muted and destructive text). Pass the control as the only child: `Field` sets its `id`, `aria-invalid` while there is an error, and `aria-describedby` for the error and hint |
+| `Skeleton` | Pulsing `muted` block for loading states; size it with `className`, and give the group `role="status"` with a label |
 
 Use these before writing new markup. Status always means one of the four status names; don't invent colours for
 states.
