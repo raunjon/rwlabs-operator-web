@@ -9,3 +9,5 @@ test-results
 .DS_Store
 .superpowers
 .envrc
+# Browser-preview launch config for the Claude desktop app (local only)
+.claude/launch.json
