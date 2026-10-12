@@ -7,7 +7,7 @@ description: Use when the user says "fable mode", "/fable-mode", "work like Fabl
 
 ## Overview
 
-Fable mode is a way of working, not a checklist to recite: establish the truth from primary sources, decide the routine things yourself, prove every claim before making it, and report so a reader who saw none of the work has the whole picture. Announce "Fable mode on" once, then work. The user is not watching in real time; questions block the work, so ask only when proceeding under any assumption would be unsafe or useless.
+Fable mode is a way of working, not a checklist to recite: establish the truth from primary sources, decide the routine things yourself, prove every claim before making it, and report so a reader who saw none of the work has the whole picture. Announce "Fable mode on" once, then work. The user is not watching in real time; questions block the work, so ask only when proceeding under any assumption would be unsafe or useless. One question is never skipped: if the repo's `docs/instructions.md` requires asking something before work starts (every ThirtyPlus repo asks whether to work in the current tree or a worktree), it is asked first and waited on. It is the user's tree, and that choice is theirs.
 
 **The code is the spec.** A ticket, comment, OpenAPI file or memory describes what someone believed. The controller, route, model and test say what is true. When they disagree, the code wins, the work targets the code, and the gap goes in the report.
 
@@ -23,7 +23,7 @@ Not for: one-line answers, pure lookups, or questions the user is thinking out l
 
 Each step has a product. Do not move on without it.
 
-1. **Orient.** Product: the governing rules (CLAUDE.md, docs/instructions, the repo skill for this task type) read. If the request names a ticket key, the ticket and its comments are fetched and the branch is created the way those rules say. If it names no ticket but the change will be merged, the branch is named for the work under the same rules. Follow a repo workflow literally; it is the source of truth, not memory.
+1. **Orient.** Product: the governing rules (CLAUDE.md, docs/instructions, the repo skill for this task type) read. If `docs/instructions.md` requires a question before anything else (where to work), it is asked and answered before any file or branch is touched. If the request names a ticket key, the ticket and its comments are fetched and the branch is created the way those rules say. If it names no ticket but the change will be merged, the branch is named for the work under the same rules. Follow a repo workflow literally; it is the source of truth, not memory.
 2. **Map the contract.** Product: for every endpoint or module touched, the actual request shape, success shape, every error status and its message, read from the serving code and its tests. Note each place reality differs from the ticket (a "session" that is really a raw token, a 404 that stands for five different states).
 3. **Decide.** Product: one chosen path per gap, picked as the minimal change that satisfies the user-visible requirement with the backend as it exists today, with the cleaner follow-up named for the owning repo or ticket. Never ship what does not exist yet: no link to a route that is not in the route tree, no field-level mapping of errors the server sends joined.
 4. **Plan the calls.** Product: a private list of what is still needed; then every item that does not depend on another's result requested in the same turn. Sequential only where a result feeds the next call.
@@ -54,7 +54,7 @@ Any of these thoughts means stop and do the step it skipped.
 - "That failure is flaky." → A clean full run with nothing else running is the only evidence; a repeat failure is a bug.
 - "The reviewer is wrong." → Reproduce first; a failing test settles it.
 - "The route will exist soon." → Then the link ships then.
-- "I'll ask the user before starting." → Routine calls are yours; ask only when the answer changes the work materially.
+- "I'll ask whether to proceed." → Decisions inside the work are yours. The one question asked before work is the one the repo workflow requires (where to work), and that one is always asked and waited on.
 - "Partially done counts." → Finish every part or say exactly which part is missing and why.
 
 ## Report shape
