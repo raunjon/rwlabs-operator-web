@@ -5,7 +5,9 @@ How the operator panel looks and how to keep it consistent. The live reference i
 token, contrast pair and shared component in the current theme, and has a theme toggle. When this doc and the page
 disagree, the code wins: fix the doc.
 
-Source of the values: the PlusOne Figma file ("Colours and rules" for light, "Dark Mode — Color Palette" for dark).
+Source of the values: the PlusOne Figma file,
+[Colours and rules](https://www.figma.com/design/mhtdApKR13mUNcV4DtQGPe/PlusOne?node-id=1489-3553&m=dev) (light) and
+[Dark Mode — Color Palette](https://www.figma.com/design/mhtdApKR13mUNcV4DtQGPe/PlusOne?node-id=1886-4602&m=dev) (dark).
 
 ## Files
 
@@ -26,11 +28,12 @@ Two layers. Components use only the second.
 ### 1. Palette: `--palette-<ramp>-<step>`
 
 Figma's ramps, copied verbatim. Ramps: `primary`, `secondary`, `neutral`, `success`, `warning`, `error`, `info`.
-Steps: `50`–`900` (light neutral also has `25`, the near-white used for cards and text on fills).
+Steps: `50`–`900` (light neutral also has `25`, pure white, used for cards and text on fills).
 
 Dark mode swaps in Figma's dark ramps under `.dark`. They run the other way (50 is the darkest) and keep `500`, the
-brand base, identical to light; a test enforces that. So `neutral-50` is "page background" in both modes, which is
-why most semantic tokens point at the same step in both.
+brand base, identical to light; a test enforces that. So `neutral-50` is "page background" in both modes, and the
+basics (page, text, borders, input, focus ring) point at the same step in both. Surfaces, brand and status tokens
+pick their own step per mode.
 
 Only `tokens.css` and the style guide page use palette tokens.
 
@@ -43,7 +46,7 @@ What components use, through the Tailwind utilities they generate (`bg-backgroun
 |---|---|
 | `background` / `foreground` | Page surface and body text |
 | `card` / `card-foreground` | Raised surfaces: cards, tables, outline buttons |
-| `muted` / `muted-foreground` | Quiet fills (code, skeletons); secondary text |
+| `muted` / `muted-foreground` | Quiet fills (table header/footer, disabled inputs, inline code, the theme toggle track); secondary text |
 | `accent` / `accent-foreground` | Hover and selected state for ghost/outline buttons and table rows |
 | `border` | Dividers and container edges (applied to `*` by default) |
 | `input` | Form control borders (3:1 against page and card) |
@@ -68,8 +71,8 @@ The status names are `success`, `warning`, `destructive` (Figma's `error` ramp) 
 
 ### Rules
 
-- **No raw colours** anywhere in `src/` except `tokens.css`. Use a token utility or `var(--token)`. The test fails
-  otherwise.
+- **No raw colours** in `src/` outside `tokens.css`. Use a token utility or `var(--token)`. The test fails otherwise;
+  it skips only test files and `src/lib/contrast.ts` (the colour parser, which has to name colour formats).
 - **No `dark:` variants.** Tokens switch with the `dark` class, so components are written once.
 - **Semantic tokens are built only from the palette** (`var(--palette-…)`), never a literal value.
 - **New pair, new entry.** When a component puts a token on a background it hasn't been on before, add the pair to
@@ -94,7 +97,8 @@ The status names are `success`, `warning`, `destructive` (Figma's `error` ramp) 
 
 ## Typography
 
-Inter Variable, self-hosted via `@fontsource-variable/inter` (`font-sans`). UI text defaults to `text-sm` (14px).
+Inter Variable, self-hosted via `@fontsource-variable/inter` (`font-sans`). `body` has no size set, so text is 16px
+unless a component sets one: use `text-sm` (14px) for UI text, as the shared components do.
 
 | Class | Size | Typical use |
 |---|---|---|
@@ -106,7 +110,8 @@ Inter Variable, self-hosted via `@fontsource-variable/inter` (`font-sans`). UI t
 | `text-sm` | 14px | Default UI text, controls, tables |
 | `text-xs` | 12px | Captions, badges, inline code |
 
-Links: `text-link underline underline-offset-4`. Inline code: `rounded-xs bg-muted px-1 py-0.5 font-mono text-xs`.
+Links: `text-link underline-offset-4`, plus `underline` inside running text or `hover:underline` for standalone links
+(nav, "Forgot password?"). Inline code: `rounded-xs bg-muted px-1 py-0.5 font-mono text-xs`.
 
 ## Radius
 
@@ -115,14 +120,14 @@ Figma's scale replaces Tailwind's defaults:
 | Token | Value | Used for |
 |---|---|---|
 | `rounded-none` | 0 | |
-| `rounded-xs` | 4px | Inline code |
-| `rounded-sm` | 8px | Buttons, inputs, controls |
-| `rounded-md` | 12px | Cards, tables, alerts |
+| `rounded-xs` | 4px | Inline code, small swatches |
+| `rounded-sm` | 8px | Buttons, inputs, alerts, controls |
+| `rounded-md` | 12px | Cards, tables |
 | `rounded-lg` | 16px | |
 | `rounded-xl` | 20px | |
 | `rounded-2xl` | 24px | |
 | `rounded-3xl` | 32px | |
-| `rounded-full` | 9999px | Badges, avatars |
+| `rounded-full` | 9999px | Badges |
 
 ## Spacing
 
@@ -141,9 +146,9 @@ tabbing through `/style-guide`.
 | `Button` | `variant`: `default`, `secondary`, `outline`, `ghost`, `destructive`, `link`. `size`: `default` (h-9), `sm` (h-8), `lg` (h-10), `icon` (36px square). `asChild` to render a link |
 | `Badge` | `default`, `secondary`, `outline`, `info`, `success`, `warning`, `destructive` (status ones use the subtle set) |
 | `Alert` | `default`, `info`, `success`, `warning`, `destructive`. Gets `role="alert"` for destructive, `role="status"` otherwise |
-| `Card` | `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`, `CardContent`, `CardFooter` |
-| `Table` | `TableHeader`, `TableBody`, `TableFooter`, `TableRow`, `TableHead`, `TableCell`, `TableCaption`. Rows use `accent` on hover/selection |
-| `Input`, `Textarea`, `Label` | Form fields, bordered with `input` |
+| `Card` | `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`, `CardContent`, `CardFooter`. `CardTitle` renders an `h3`; where the page needs another heading level, put your own heading in `CardHeader` |
+| `Table` | `TableHeader`, `TableBody`, `TableFooter`, `TableRow`, `TableHead`, `TableCell`, `TableCaption`. Body rows use `accent` on hover/selection; header rows don't |
+| `Input`, `Textarea`, `Label` | Form fields, bordered with `input`. Set `aria-invalid` for the error state; pair `Label` and field with `htmlFor`/`id` |
 
 Use these before writing new markup. Status always means one of the four status names; don't invent colours for
 states.
@@ -164,4 +169,5 @@ states.
 - [ ] Shared components used where they exist; new ones shown on `/style-guide`
 - [ ] Checked in light and dark on `/style-guide` and the real screen
 - [ ] Keyboard: everything reachable, focus ring visible
-- [ ] `npm test && npm run typecheck && npm run lint`
+- [ ] `npm test`, `npm run typecheck`, `npm run lint` and `npm run build`, plus `npm run e2e` when pages or routes
+  changed

@@ -37,6 +37,8 @@ Docker is staging/production only: don't build images locally.
   `<a href>` for API downloads: the panel must be movable to its own host by setting `VITE_API_BASE_URL`.
 - **The `api` client looks up `fetch` per call.** openapi-fetch otherwise captures the global fetch at import, which
   bypasses MSW in tests (requests then hit a real gateway on :3000).
+- **Design system:** read [`docs/design-system.md`](docs/design-system.md) before UI work (tokens, contrast pairs,
+  theme, components, checklist).
 - **Colours only via tokens** in `src/styles/tokens.css`: the Figma palette (`--palette-*`, light and dark ramps) and the
   semantic tokens built from it (`bg-primary`, `text-success`, ...). Components use semantic tokens only; a test fails
   on any raw hex/rgb/oklch elsewhere in `src/`. Dark mode is the `dark` class on `<html>`, so components need no
