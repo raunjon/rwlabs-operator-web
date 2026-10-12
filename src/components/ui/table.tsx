@@ -10,7 +10,14 @@ export function Table({ className, ...props }: React.ComponentProps<'table'>) {
 }
 
 export function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
-  return <thead data-slot="table-header" className={cn('bg-muted [&_tr]:border-b', className)} {...props} />
+  // Header rows sit on the muted header background and shouldn't react to hover like body rows do.
+  return (
+    <thead
+      data-slot="table-header"
+      className={cn('bg-muted [&_tr]:border-b [&_tr]:hover:bg-transparent', className)}
+      {...props}
+    />
+  )
 }
 
 export function TableBody({ className, ...props }: React.ComponentProps<'tbody'>) {

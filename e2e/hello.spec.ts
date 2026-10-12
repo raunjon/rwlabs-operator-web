@@ -133,3 +133,19 @@ test('a stored light theme stays light on a dark OS', async ({ page }) => {
   release()
   await expect(page.getByText(/showing the light theme/)).toBeVisible()
 })
+
+test('table body rows highlight on hover but the header row does not', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' })
+  await mockGatewayHealth(page)
+  await page.goto('/style-guide')
+  const table = page.getByRole('region', { name: 'Table' }).getByRole('table')
+
+  const headerRow = table.getByRole('row').filter({ has: page.getByRole('columnheader', { name: 'Name' }) })
+  await headerRow.hover()
+  await expect(headerRow).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+
+  // accent (neutral-100) in light mode.
+  const bodyRow = table.getByRole('row').filter({ hasText: 'Asha Rao' })
+  await bodyRow.hover()
+  await expect(bodyRow).toHaveCSS('background-color', 'rgb(238, 240, 243)')
+})
