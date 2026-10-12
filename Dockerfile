@@ -4,6 +4,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+# Which deployment this image is for (src/config.ts). Defaults to production, which hides the internal pages; the
+# staging compose file passes VITE_APP_ENV=staging.
+ARG VITE_APP_ENV=production
 RUN npm run build
 
 # Runtime: nginx only (no Node). Serves dist/ and proxies API paths to the gateway.

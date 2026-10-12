@@ -59,6 +59,9 @@ Docker is staging/production only: don't build images locally.
   because the gateway's OpenAPI doesn't describe login's body or `?jwt=true`.
 - **Routes:** signed-in pages live under `src/routes/_authenticated/` (guard + session watcher); `/t` is tenant
   admins only, `/admin` super admins only. `/login`, `/health` and `/style-guide` are public.
+- **Internal pages** (`/style-guide`, `/health`) and their links (sidebar "Internal", login footer) exist only when
+  `config.showInternalPages` is on: `npm run dev` and builds with `VITE_APP_ENV=staging` (the staging compose file
+  passes it as a build arg). Any other build is production and serves them as not found.
 - **Gateway responses** use the presentable envelope (`{ data, success, ... }` / `{ error: { message, status } }`);
   `toApiError` turns failures into `ApiError`. `/health` is the exception (its own `{ service, status }` shape).
 - **21st.dev components:** install via the shadcn CLI, then replace `next/link`/`next/image`, move Tailwind 3 config
