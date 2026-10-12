@@ -3,8 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Lets the browser paint its own dark canvas before the app loads, so dark-mode users see no white flash. -->
+    <!-- Dark scrollbars and form controls before the stylesheet applies. -->
     <meta name="color-scheme" content="light dark" />
+    <!--
+      Sets the dark class before the first paint. The app module loads later (deferred), so leaving this to
+      src/lib/theme.ts would paint the light tokens first and flash on reload. Keep the storage key, values and
+      media query in step with theme.ts, which takes over (subscriptions, switching) once the app starts.
+    -->
+    <script>
+      ;(function () {
+        var stored = null
+        try {
+          stored = localStorage.getItem('theme')
+        } catch (e) {}
+        var systemDark = !!window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (stored === 'dark' || (stored !== 'light' && systemDark)) document.documentElement.classList.add('dark')
+      })()
+    </script>
     <title>Operator</title>
   </head>
   <body>

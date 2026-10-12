@@ -38,7 +38,8 @@ function applyWithoutTransitions() {
   requestAnimationFrame(() => root.classList.remove('theme-switching'))
 }
 
-// Call once before the first render, so the page never paints in the wrong mode.
+// Call once before the first render. The inline script in index.html has already set the class for the first paint
+// from the same inputs; this loads the preference into the store and follows later OS switches.
 export function initTheme() {
   preference = readStoredPreference()
   apply()

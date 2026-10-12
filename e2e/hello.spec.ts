@@ -89,3 +89,47 @@ test('the start page links to the style guide', async ({ page }) => {
   await page.getByRole('link', { name: 'Style guide' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Style guide' })).toBeVisible()
 })
+
+// Holds the app module back so the assertions run on the page as first painted, before main.tsx executes.
+async function gotoWithAppHeld(page: Page, path: string) {
+  let release = () => {}
+  const held = new Promise<void>((resolve) => (release = resolve))
+  let intercepted = false
+  // The dev server may add a cache-busting query (?t=...) after a file change.
+  await page.route(/\/src\/main\.tsx(\?.*)?$/, async (route) => {
+    intercepted = true
+    await held
+    await route.fallback()
+  })
+  await mockGatewayHealth(page)
+  await page.goto(path, { waitUntil: 'commit' })
+  await expect.poll(() => intercepted).toBe(true)
+  await expect(page.locator('#root')).toBeEmpty()
+  return release
+}
+
+test('a dark OS setting applies the dark tokens before the app module runs', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  const release = await gotoWithAppHeld(page, '/style-guide')
+  await expect(page.locator('html')).toHaveClass(/\bdark\b/)
+  release()
+  await expect(page.getByText(/showing the dark theme/)).toBeVisible()
+})
+
+test('a stored theme beats the OS setting before the app module runs', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.addInitScript(() => localStorage.setItem('theme', 'dark'))
+  const releaseDark = await gotoWithAppHeld(page, '/style-guide')
+  await expect(page.locator('html')).toHaveClass(/\bdark\b/)
+  releaseDark()
+  await expect(page.getByRole('radio', { name: 'Dark' })).toBeChecked()
+})
+
+test('a stored light theme stays light on a dark OS', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.addInitScript(() => localStorage.setItem('theme', 'light'))
+  const release = await gotoWithAppHeld(page, '/style-guide')
+  await expect(page.locator('html')).not.toHaveClass(/\bdark\b/)
+  release()
+  await expect(page.getByText(/showing the light theme/)).toBeVisible()
+})
