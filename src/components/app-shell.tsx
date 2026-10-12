@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { config } from '@/config'
@@ -15,14 +15,7 @@ export interface NavItem {
 // the main content. Used by both the tenant (/t) and super-admin (/admin) areas.
 export function AppShell({ area, nav, children }: { area: string; nav: NavItem[]; children: ReactNode }) {
   const session = useSession()
-  const [signingOut, setSigningOut] = useState(false)
   const name = [session?.firstName, session?.lastName].filter(Boolean).join(' ') || session?.email
-
-  async function handleSignOut() {
-    setSigningOut(true)
-    // The authenticated layout returns to the login page once the session ends.
-    await signOut()
-  }
 
   return (
     <div className="min-h-dvh md:grid md:grid-cols-[16rem_1fr]">
@@ -52,8 +45,9 @@ export function AppShell({ area, nav, children }: { area: string; nav: NavItem[]
             {session?.roleDisplayName && <p className="text-muted-foreground">{session.roleDisplayName}</p>}
           </div>
           <ThemeToggle className="w-full [&>label]:flex-1 [&>label]:text-center" />
-          <Button variant="outline" className="w-full" onClick={handleSignOut} disabled={signingOut}>
-            {signingOut ? 'Signing out…' : 'Sign out'}
+          {/* Ends the session at once; the authenticated layout then returns to the login page. */}
+          <Button variant="outline" className="w-full" onClick={() => void signOut()}>
+            Sign out
           </Button>
         </div>
       </aside>

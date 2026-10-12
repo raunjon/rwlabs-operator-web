@@ -37,12 +37,13 @@ export async function signIn(email: string, password: string): Promise<PanelSess
   throw new ApiError(200, 'The server sent an unexpected response')
 }
 
-// Tells the server, then clears the session even if that failed. The authenticated layout notices the session
-// ending and returns to the login page.
+// Clears the session first, synchronously, then asks the server to revoke the token. Waiting for the server
+// first would leave the token in sessionStorage while the request is in flight, and a reload in that window would
+// restore the session. The authenticated layout notices the session ending and returns to the login page.
 export async function signOut() {
   const token = sessionToken()
-  if (token) await requestSignOut(token)
   endSession('signed-out')
+  if (token) await requestSignOut(token)
 }
 
 export function useSignIn() {

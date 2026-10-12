@@ -195,6 +195,31 @@ describe('signed-in navigation', () => {
     expect(search(router)).toMatchObject({ redirect: '/t', reason: 'expired' })
   })
 
+  it('clears the session before the slow logout request finishes', async () => {
+    signedInAs()
+    const token = sessionStorage.getItem(SESSION_STORAGE_KEY)
+    let seen: { token: string | null; storedWhenSent: string | null; keepalive: boolean } | undefined
+    server.use(
+      http.post('*/auth/api/logout', async ({ request }) => {
+        seen = {
+          token: request.headers.get('X-Jwt-Token'),
+          storedWhenSent: sessionStorage.getItem(SESSION_STORAGE_KEY),
+          keepalive: request.keepalive,
+        }
+        await delay('infinite')
+        return HttpResponse.json({})
+      }),
+    )
+    renderApp('/t')
+    await userEvent.click(await screen.findByRole('button', { name: 'Sign out' }))
+
+    // A reload now must not restore the session, even though the server hasn't answered.
+    expect(sessionStorage.getItem(SESSION_STORAGE_KEY)).toBeNull()
+    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
+    await waitFor(() => expect(seen).toBeDefined())
+    expect(seen).toEqual({ token, storedWhenSent: null, keepalive: true })
+  })
+
   it.each([
     ['succeeds', () => HttpResponse.json({ data: { message: 'Logged out successfully' }, success: true })],
     ['fails', () => HttpResponse.json({}, { status: 500 })],

@@ -37,13 +37,15 @@ export async function requestSignIn(
   return jwt
 }
 
-// POST /auth/api/logout so the server revokes the token. Never rejects and gives up after a few seconds: the
-// session is cleared locally whatever happens here (spec §5.2).
+// POST /auth/api/logout so the server revokes the token. Best effort: never rejects and gives up after a few
+// seconds; callers clear the local session before calling (spec §5.2). keepalive lets the request finish even if
+// the user reloads or leaves the page straight after signing out.
 export async function requestSignOut(token: string, timeoutMs: number = SIGN_OUT_TIMEOUT_MS): Promise<void> {
   try {
     await fetch(buildUrl('/auth/api/logout'), {
       method: 'POST',
       headers: { Accept: 'application/json', 'X-Jwt-Token': token },
+      keepalive: true,
       signal: AbortSignal.timeout(timeoutMs),
     })
   } catch {
