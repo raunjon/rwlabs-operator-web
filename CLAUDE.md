@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Operator panel SPA (Vite, React 19, TypeScript, TanStack Router + Query, Tailwind 4, shadcn/ui). Talks only to the
 gateway. Design spec: `docs/superpowers/specs/2026-10-12-operator-web-v1-design.md`; plans in
-`docs/superpowers/plans/`. Stay inside `refactor/` (see `../CLAUDE.md`). Work on `develop`.
+`docs/superpowers/plans/`. Stay inside `refactor/` (see `../CLAUDE.md`). Work on `develop`. Code review guidance: `AGENTS.md`.
 
 ## Commands
 
