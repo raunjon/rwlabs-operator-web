@@ -74,8 +74,11 @@ Docker is staging/production only: don't build images locally.
   401. Logout is the deliberate exception: `requestSignOut` runs after `endSession` has already cleared the local
   session, so it does its own `fetch` to send the old JWT, uses `keepalive` so the request survives a reload, and
   never rejects. Don't route it through a helper that throws.
-- **Only login returns a gateway JWT** (`?jwt=true`). The gateway's signup and invitation-accept routes answer 201
-  with auth's raw token digest in `data.token`, which the panel can't turn into a session. `signUp` and
+- **Only login returns a gateway JWT** (`?jwt=true`). The gateway's signup and invitation-accept routes answer 200
+  (auth sends 201, but the gateway re-renders every successful proxied response as 200; only error statuses pass
+  through) with auth's raw token digest in `data.token`, which the panel can't turn into a session. Code must treat
+  any 2xx as success, never a specific status; the test mocks that answer 201 for these routes are looser than the
+  real gateway, not a contract. `signUp` and
   `acceptInvitation` (`src/features/auth/`) ignore that digest and sign in with the same email and password right
   after; if that sign-in fails the page says the account exists (`SignedUpNotSignedInError`). Never store or
   forward the digest. The clean fix is `?jwt=true` on those gateway routes; until then this is deliberate.
