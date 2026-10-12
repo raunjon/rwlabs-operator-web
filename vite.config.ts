@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { gatewayProxy } from './vite.proxy.ts'
+import { version } from './package.json'
 
 export default defineConfig(({ mode }) => {
   // VITE_GATEWAY_URL: where the dev/preview server forwards API calls (default http://localhost:3000).
@@ -12,6 +13,8 @@ export default defineConfig(({ mode }) => {
   const proxy = gatewayProxy(env.VITE_GATEWAY_URL)
 
   return {
+    // Sent as X-App-Version on sign-in (src/lib/session/device.ts).
+    define: { __APP_VERSION__: JSON.stringify(version) },
     plugins: [tanstackRouter({ target: 'react', autoCodeSplitting: true }), react(), tailwindcss()],
     resolve: {
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },

@@ -10,12 +10,22 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as HealthRouteImport } from './routes/health'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as StyleGuideRouteImport } from './routes/style-guide'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedTRouteImport } from './routes/_authenticated/t'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as AuthenticatedTIndexRouteImport } from './routes/_authenticated/t/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HealthRoute = HealthRouteImport.update({
@@ -23,39 +33,98 @@ const HealthRoute = HealthRouteImport.update({
   path: '/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StyleGuideRoute = StyleGuideRouteImport.update({
   id: '/style-guide',
   path: '/style-guide',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedTRoute = AuthenticatedTRouteImport.update({
+  id: '/t',
+  path: '/t',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedTIndexRoute = AuthenticatedTIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedTRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
+  '/login': typeof LoginRoute
   '/style-guide': typeof StyleGuideRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/t': typeof AuthenticatedTRouteWithChildren
+  '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/t/': typeof AuthenticatedTIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
+  '/login': typeof LoginRoute
   '/style-guide': typeof StyleGuideRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
+  '/t': typeof AuthenticatedTIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/health': typeof HealthRoute
+  '/login': typeof LoginRoute
   '/style-guide': typeof StyleGuideRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/t': typeof AuthenticatedTRouteWithChildren
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/t/': typeof AuthenticatedTIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/health' | '/style-guide'
+  fullPaths:
+    | '/'
+    | '/health'
+    | '/login'
+    | '/style-guide'
+    | '/admin'
+    | '/t'
+    | '/admin/'
+    | '/t/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/health' | '/style-guide'
-  id: '__root__' | '/' | '/health' | '/style-guide'
+  to: '/' | '/health' | '/login' | '/style-guide' | '/admin' | '/t'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/health'
+    | '/login'
+    | '/style-guide'
+    | '/_authenticated/admin'
+    | '/_authenticated/t'
+    | '/_authenticated/admin/'
+    | '/_authenticated/t/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   HealthRoute: typeof HealthRoute
+  LoginRoute: typeof LoginRoute
   StyleGuideRoute: typeof StyleGuideRoute
 }
 
@@ -68,11 +137,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/health': {
       id: '/health'
       path: '/health'
       fullPath: '/health'
       preLoaderRoute: typeof HealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/style-guide': {
@@ -82,12 +165,79 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StyleGuideRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/t': {
+      id: '/_authenticated/t'
+      path: '/t'
+      fullPath: '/t'
+      preLoaderRoute: typeof AuthenticatedTRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/t/': {
+      id: '/_authenticated/t/'
+      path: '/'
+      fullPath: '/t/'
+      preLoaderRoute: typeof AuthenticatedTIndexRouteImport
+      parentRoute: typeof AuthenticatedTRoute
+    }
   }
 }
 
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
+interface AuthenticatedTRouteChildren {
+  AuthenticatedTIndexRoute: typeof AuthenticatedTIndexRoute
+}
+
+const AuthenticatedTRouteChildren: AuthenticatedTRouteChildren = {
+  AuthenticatedTIndexRoute: AuthenticatedTIndexRoute,
+}
+
+const AuthenticatedTRouteWithChildren = AuthenticatedTRoute._addFileChildren(
+  AuthenticatedTRouteChildren,
+)
+
+interface AuthenticatedRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedTRoute: typeof AuthenticatedTRouteWithChildren
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedTRoute: AuthenticatedTRouteWithChildren,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
   HealthRoute: HealthRoute,
+  LoginRoute: LoginRoute,
   StyleGuideRoute: StyleGuideRoute,
 }
 export const routeTree = rootRouteImport

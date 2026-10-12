@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   {
-    ignores: ['dist', 'src/routeTree.gen.ts', 'src/lib/api/schema.d.ts', 'playwright-report', 'test-results'],
+    // .claude holds session worktrees (full checkouts with their own tsconfig), which would break type-aware parsing.
+    ignores: ['dist', 'src/routeTree.gen.ts', 'src/lib/api/schema.d.ts', 'playwright-report', 'test-results', '.claude'],
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
