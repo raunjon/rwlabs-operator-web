@@ -25,7 +25,9 @@ gateway. Design spec: `docs/superpowers/specs/2026-10-12-operator-web-v1-design.
 macOS, so this refuses to start if anything answers on 127.0.0.1 or ::1 port 3020.
 
 Don't run `npm test` at the same time as `npm run e2e` or a dev-server start: under that load the flow tests'
-`findBy*` lookups hit their 1s timeout and look like real failures. Rerun the file alone before touching the test.
+`findBy*` lookups hit their 1s timeout and look like real failures. A failure seen that way is environmental only
+once the whole check set passes again with nothing else running; a single isolated pass of the file proves nothing,
+and a repeat failure is a defect (a timing race or shared state) to fix, not to loosen.
 
 `.claude/launch.json` (git-ignored) is the Claude desktop app's browser-preview config: `web` runs `npm run dev`
 on 3020 so the real page can be checked against the local gateway.

@@ -125,8 +125,10 @@ Every behaviour change needs a test that fails without it. Look for:
 - **e2e (`e2e/`) stays backend-free:** mock with `page.route`. Add an e2e test for anything that crosses routes
   (login → redirect, deep links). Specs share `e2e/support/jwt.ts` for gateway-shaped tokens.
 - **A clean run:** `npm test`, `npm run typecheck`, `npm run lint` (zero warnings) and `npm run build` all pass,
-  plus `npm run e2e` when routes or pages changed. A failure that appears only while e2e or a dev server runs
-  alongside is load, not a bug: rerun the file alone before asking for a change.
+  plus `npm run e2e` when routes or pages changed. A failure seen while e2e or a dev server ran alongside counts as
+  environmental only after the whole check set passes again with nothing else running; a single isolated pass of
+  the file is not evidence, and a repeat failure is a defect to fix. Flag a PR that calls a failure flaky without
+  that clean full rerun, or that raises a timeout to make one go away.
 
 ## What not to flag
 
