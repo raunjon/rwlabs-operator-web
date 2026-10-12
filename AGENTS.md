@@ -71,6 +71,8 @@ message and a retry), success, plus 403 ("You don't have access to this") and th
 
 ### 6. Design system
 
+The rules below are summarised from [`docs/design-system.md`](docs/design-system.md); check UI changes against it.
+
 - **Colours, radii and fonts only through tokens** in `src/styles/tokens.css`. Flag raw hex/rgb/oklch values or
   arbitrary Tailwind colour values (`bg-[#...]`) in components, components using `--palette-*` directly instead of a
   semantic token, and `dark:` variants (the tokens already switch per mode).
