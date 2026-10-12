@@ -29,5 +29,5 @@ npm run build
 ## Staging and production
 
 Docker is used on staging and production only. The image (`Dockerfile`) is nginx serving `dist/` and proxying the
-API paths to `GATEWAY_UPSTREAM` (with `GATEWAY_HOST_HEADER`), configured in `nginx/default.conf.template`. It is not
-yet wired into `refactor/docker-compose.yml` / `deploy.sh`.
+API paths to `GATEWAY_UPSTREAM` (with `GATEWAY_HOST_HEADER`), configured in `nginx/default.conf.template`. It runs as
+the `console` service in `refactor/docker-compose.yml` (port 3020); deploy with `./deploy.sh console` from `refactor/`.

@@ -97,7 +97,6 @@ Every behaviour change needs a test that fails without it. Look for:
   expected.
 - **Features from later spec steps** (login, shells, leads, settings, ads, super-admin) missing on a PR that doesn't
   claim them.
-- **`docker-compose.yml` / `deploy.sh` not knowing about the panel yet.** That wiring is deliberately deferred.
 - **TypeScript 5.9 instead of 6/7, and installs done with `npx npm@12`.** Both are deliberate (see `CLAUDE.md`).
 - **Generated files** (`src/routeTree.gen.ts`, `src/lib/api/schema.d.ts`) — review the PR's reason for changing
   them, not their contents.
