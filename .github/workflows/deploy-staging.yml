@@ -1,0 +1,23 @@
+name: Deploy to staging
+
+# Runs on the self-hosted runner on the staging server (10.0.0.135). deploy.sh,
+# next to the staging docker-compose.yml there, pulls develop and rebuilds this
+# service, then waits for the gateway's health check. Deploys from different
+# repos take turns (deploy.sh holds a lock while it runs).
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+# A newer push waits for the running deploy instead of cancelling it mid-build.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, rwlabs-staging]
+    timeout-minutes: 30
+    steps:
+      - name: Pull develop and rebuild console
+        run: /var/www/docker/rwlabs/microservices/deploy.sh console
