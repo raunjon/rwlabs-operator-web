@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Jira tickets:** when an `OW-xxx` ticket (or a thirtyplus.atlassian.net/browse/OW-xxx link) is shared, read and
+> follow [`docs/instructions.md`](docs/instructions.md) **before doing anything else** (the `working-on-ow-ticket` skill).
+> It covers the worktree question, branch naming, the checks to run, and raising the PR.
+
 Operator panel SPA (Vite, React 19, TypeScript, TanStack Router + Query, Tailwind 4, shadcn/ui). Talks only to the
 gateway. Design spec: `docs/superpowers/specs/2026-10-12-operator-web-v1-design.md`; plans in
 `docs/superpowers/plans/`. Stay inside `refactor/` (see `../CLAUDE.md`). Work on `develop`. Code review guidance: `AGENTS.md`.
