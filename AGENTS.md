@@ -72,7 +72,10 @@ message and a retry), success, plus 403 ("You don't have access to this") and th
 ### 6. Design system
 
 - **Colours, radii and fonts only through tokens** in `src/styles/tokens.css`. Flag raw hex/rgb/oklch values or
-  arbitrary Tailwind colour values (`bg-[#...]`) in components.
+  arbitrary Tailwind colour values (`bg-[#...]`) in components, components using `--palette-*` directly instead of a
+  semantic token, and `dark:` variants (the tokens already switch per mode).
+- **Contrast:** a component that puts a new pair of tokens together (text on a background, a control border) needs
+  the pair in `src/styles/contrast-pairs.ts`, so `tokens.test.ts` checks it against WCAG AA in light and dark.
 - **The product name only from `config.productName`.** Flag the literal "RWLabs" anywhere else in `src/`.
 - **New UI components** come from shadcn (`npx shadcn@3.8.5 add`) or 21st.dev, adapted per `CLAUDE.md`
   (no `next/*` imports, tokens only, keyboard accessible, licence noted). Flag a copied component that skips this.
@@ -93,8 +96,7 @@ Every behaviour change needs a test that fails without it. Look for:
 
 ## What not to flag
 
-- **Placeholder visual design.** The tokens are shadcn neutrals until the real palette arrives; plain layouts are
-  expected.
+- **Plain layouts.** The palette and components are in place, but there is no app shell or page design yet.
 - **Features from later spec steps** (login, shells, leads, settings, ads, super-admin) missing on a PR that doesn't
   claim them.
 - **TypeScript 5.9 instead of 6/7, and installs done with `npx npm@12`.** Both are deliberate (see `CLAUDE.md`).
