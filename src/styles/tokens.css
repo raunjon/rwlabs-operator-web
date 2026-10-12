@@ -1,60 +1,334 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import '@fontsource-variable/inter';
+
+/* Dark mode is the `dark` class on <html>, set by src/lib/theme.ts (follows the OS unless the user picks one). */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Design tokens. Placeholder values: shadcn/ui's neutral palette, until the real palette and visual guidelines
- * arrive. Components use only the semantic utilities these produce (bg-background, text-muted-foreground, ...),
- * so the palette change happens here and nowhere else.
+ * Design tokens: the only place colours, radii and fonts are written down. Source: the PlusOne Figma file
+ * ("Colours and rules" for light, "Dark Mode — Color Palette" for dark).
+ *
+ * Two layers:
+ *   1. Palette (--palette-<ramp>-<step>): the Figma ramps, verbatim. Dark mode swaps in Figma's dark ramps, which
+ *      run the other way (50 is darkest) and keep 500, the brand base, identical. Components never use these
+ *      directly; only the semantic tokens below and the style guide page do.
+ *   2. Semantic tokens (--background, --primary, --success, ...): what components use, through the Tailwind
+ *      utilities they generate (bg-background, text-success, border-input, ...). Each mode picks its own steps,
+ *      chosen so text pairs meet WCAG AA (4.5:1) and controls/focus rings meet 3:1. src/styles/tokens.test.ts
+ *      checks every pair; run it after changing a value.
+ *
+ * Status colours come in three tokens: --<status> (text, icons and borders on the page or a card; also a solid
+ * fill, with --<status>-foreground on top), --<status>-subtle (tinted alert/badge background) and
+ * --<status>-border (the tinted container's edge).
  */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --success: oklch(0.527 0.154 150.069);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  color-scheme: light;
+
+  --palette-primary-50: #fef0f1;
+  --palette-primary-100: #fdd8db;
+  --palette-primary-200: #fabfc4;
+  --palette-primary-300: #f79aa1;
+  --palette-primary-400: #f37480;
+  --palette-primary-500: #ef505f;
+  --palette-primary-600: #d93d4c;
+  --palette-primary-700: #b82c3a;
+  --palette-primary-800: #8f1e29;
+  --palette-primary-900: #631219;
+
+  --palette-secondary-50: #f9ecec;
+  --palette-secondary-100: #f2d0d2;
+  --palette-secondary-200: #e8aeb1;
+  --palette-secondary-300: #d9878b;
+  --palette-secondary-400: #cb6168;
+  --palette-secondary-500: #bd3844;
+  --palette-secondary-600: #a62d38;
+  --palette-secondary-700: #8a222c;
+  --palette-secondary-800: #6b181f;
+  --palette-secondary-900: #480e14;
+
+  --palette-neutral-25: #ffffff;
+  --palette-neutral-50: #f7f8f9;
+  --palette-neutral-100: #eef0f3;
+  --palette-neutral-200: #d8dce3;
+  --palette-neutral-300: #bcc3ce;
+  --palette-neutral-400: #9aa4b2;
+  --palette-neutral-500: #7a8594;
+  --palette-neutral-600: #5e6a78;
+  --palette-neutral-700: #45515e;
+  --palette-neutral-800: #2e3844;
+  --palette-neutral-900: #1a2330;
+
+  --palette-success-50: #edfaf4;
+  --palette-success-100: #d1f3e4;
+  --palette-success-200: #a3e7c9;
+  --palette-success-300: #6dd6ab;
+  --palette-success-400: #3dc28e;
+  --palette-success-500: #1aad74;
+  --palette-success-600: #13945f;
+  --palette-success-700: #0d7349;
+  --palette-success-800: #095234;
+  --palette-success-900: #053320;
+
+  --palette-warning-50: #fffbeb;
+  --palette-warning-100: #fef4c7;
+  --palette-warning-200: #fde68a;
+  --palette-warning-300: #fbd14e;
+  --palette-warning-400: #f8bc1e;
+  --palette-warning-500: #efa700;
+  --palette-warning-600: #cc8a00;
+  --palette-warning-700: #a36c00;
+  --palette-warning-800: #7a5000;
+  --palette-warning-900: #4f3200;
+
+  --palette-error-50: #fef1f2;
+  --palette-error-100: #fdd9dc;
+  --palette-error-200: #fbb0b6;
+  --palette-error-300: #f7818a;
+  --palette-error-400: #f25260;
+  --palette-error-500: #e8293a;
+  --palette-error-600: #c9202f;
+  --palette-error-700: #a11824;
+  --palette-error-800: #78101a;
+  --palette-error-900: #4e0910;
+
+  --palette-info-50: #eef5ff;
+  --palette-info-100: #d5e8fe;
+  --palette-info-200: #abcffc;
+  --palette-info-300: #76aff8;
+  --palette-info-400: #4490f3;
+  --palette-info-500: #1f72e8;
+  --palette-info-600: #1559c4;
+  --palette-info-700: #0d419a;
+  --palette-info-800: #082b6e;
+  --palette-info-900: #041944;
+
+  --background: var(--palette-neutral-50);
+  --foreground: var(--palette-neutral-900);
+  --card: var(--palette-neutral-25);
+  --card-foreground: var(--palette-neutral-900);
+  --muted: var(--palette-neutral-100);
+  --muted-foreground: var(--palette-neutral-600);
+  --border: var(--palette-neutral-200);
+  --input: var(--palette-neutral-500);
+  --ring: var(--palette-primary-500);
+
+  /* White on brand 500 is only 3.5:1, so light-mode buttons use 700; 500 stays the focus ring and brand accent. */
+  --primary: var(--palette-primary-700);
+  --primary-hover: var(--palette-primary-800);
+  --primary-foreground: var(--palette-neutral-25);
+  --link: var(--palette-primary-700);
+  --secondary: var(--palette-secondary-50);
+  --secondary-hover: var(--palette-secondary-100);
+  --secondary-foreground: var(--palette-secondary-700);
+  --accent: var(--palette-neutral-100);
+  --accent-foreground: var(--palette-neutral-900);
+
+  --success: var(--palette-success-700);
+  --success-foreground: var(--palette-neutral-25);
+  --success-subtle: var(--palette-success-50);
+  --success-border: var(--palette-success-200);
+  --warning: var(--palette-warning-800);
+  --warning-foreground: var(--palette-neutral-25);
+  --warning-subtle: var(--palette-warning-50);
+  --warning-border: var(--palette-warning-300);
+  --destructive: var(--palette-error-600);
+  --destructive-hover: var(--palette-error-700);
+  --destructive-foreground: var(--palette-neutral-25);
+  --destructive-subtle: var(--palette-error-50);
+  --destructive-border: var(--palette-error-200);
+  --info: var(--palette-info-600);
+  --info-foreground: var(--palette-neutral-25);
+  --info-subtle: var(--palette-info-50);
+  --info-border: var(--palette-info-200);
 }
 
+.dark {
+  color-scheme: dark;
+
+  --palette-primary-50: #1f070a;
+  --palette-primary-100: #3a0e12;
+  --palette-primary-200: #5a1820;
+  --palette-primary-300: #7d2330;
+  --palette-primary-400: #a63040;
+  --palette-primary-500: #ef505f;
+  --palette-primary-600: #f37480;
+  --palette-primary-700: #f79aa1;
+  --palette-primary-800: #fabfc4;
+  --palette-primary-900: #fef0f1;
+
+  --palette-secondary-50: #160508;
+  --palette-secondary-100: #2b0a0f;
+  --palette-secondary-200: #471219;
+  --palette-secondary-300: #661c25;
+  --palette-secondary-400: #8a2830;
+  --palette-secondary-500: #bd3844;
+  --palette-secondary-600: #cb6168;
+  --palette-secondary-700: #d9878b;
+  --palette-secondary-800: #e8aeb1;
+  --palette-secondary-900: #f9ecec;
+
+  --palette-neutral-50: #111820;
+  --palette-neutral-100: #1a2330;
+  --palette-neutral-200: #2e3844;
+  --palette-neutral-300: #45515e;
+  --palette-neutral-400: #5e6a78;
+  --palette-neutral-500: #7a8594;
+  --palette-neutral-600: #9aa4b2;
+  --palette-neutral-700: #bcc3ce;
+  --palette-neutral-800: #d8dce3;
+  --palette-neutral-900: #f7f8f9;
+
+  --palette-success-50: #041a10;
+  --palette-success-100: #07291a;
+  --palette-success-200: #0d4b2e;
+  --palette-success-300: #116640;
+  --palette-success-400: #158a56;
+  --palette-success-500: #1aad74;
+  --palette-success-600: #3dc28e;
+  --palette-success-700: #6dd6ab;
+  --palette-success-800: #a3e7c9;
+  --palette-success-900: #edfaf4;
+
+  --palette-warning-50: #1a1100;
+  --palette-warning-100: #2e1f00;
+  --palette-warning-200: #4f3500;
+  --palette-warning-300: #7a5200;
+  --palette-warning-400: #a36e00;
+  --palette-warning-500: #efa700;
+  --palette-warning-600: #f8bc1e;
+  --palette-warning-700: #fbd14e;
+  --palette-warning-800: #fde68a;
+  --palette-warning-900: #fffbeb;
+
+  --palette-error-50: #1a0406;
+  --palette-error-100: #310810;
+  --palette-error-200: #530f1a;
+  --palette-error-300: #7a1622;
+  --palette-error-400: #a1202e;
+  --palette-error-500: #e8293a;
+  --palette-error-600: #f25260;
+  --palette-error-700: #f7818a;
+  --palette-error-800: #fbb0b6;
+  --palette-error-900: #fef1f2;
+
+  --palette-info-50: #020c1e;
+  --palette-info-100: #041632;
+  --palette-info-200: #082b6e;
+  --palette-info-300: #0d419a;
+  --palette-info-400: #1559c4;
+  --palette-info-500: #1f72e8;
+  --palette-info-600: #4490f3;
+  --palette-info-700: #76aff8;
+  --palette-info-800: #abcffc;
+  --palette-info-900: #eef5ff;
+
+  --background: var(--palette-neutral-50);
+  --foreground: var(--palette-neutral-900);
+  --card: var(--palette-neutral-100);
+  --card-foreground: var(--palette-neutral-900);
+  --muted: var(--palette-neutral-200);
+  --muted-foreground: var(--palette-neutral-600);
+  --border: var(--palette-neutral-200);
+  --input: var(--palette-neutral-500);
+  --ring: var(--palette-primary-500);
+
+  /* Figma keeps brand 500 on dark surfaces; dark text on it is 5.1:1 (white would be 3.5:1). */
+  --primary: var(--palette-primary-500);
+  --primary-hover: var(--palette-primary-600);
+  --primary-foreground: var(--palette-neutral-50);
+  --link: var(--palette-primary-600);
+  --secondary: var(--palette-secondary-100);
+  --secondary-hover: var(--palette-secondary-200);
+  --secondary-foreground: var(--palette-secondary-800);
+  --accent: var(--palette-neutral-200);
+  --accent-foreground: var(--palette-neutral-900);
+
+  --success: var(--palette-success-600);
+  --success-foreground: var(--palette-neutral-50);
+  --success-subtle: var(--palette-success-100);
+  --success-border: var(--palette-success-300);
+  --warning: var(--palette-warning-600);
+  --warning-foreground: var(--palette-neutral-50);
+  --warning-subtle: var(--palette-warning-100);
+  --warning-border: var(--palette-warning-300);
+  --destructive: var(--palette-error-600);
+  --destructive-hover: var(--palette-error-700);
+  --destructive-foreground: var(--palette-neutral-50);
+  --destructive-subtle: var(--palette-error-100);
+  --destructive-border: var(--palette-error-300);
+  --info: var(--palette-info-600);
+  --info-foreground: var(--palette-neutral-50);
+  --info-subtle: var(--palette-info-100);
+  --info-border: var(--palette-info-300);
+}
+
+/*
+ * Radii follow Figma's scale (none 0, xs 4, sm 8, md 12, lg 16, xl 20, 2xl 24, 3xl 32, full), replacing
+ * Tailwind's defaults. Spacing needs no override: Tailwind's 0.25rem step is Figma's 4pt grid (space-4 = p-4 = 16px).
+ */
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-success: var(--success);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-link: var(--link);
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-border: var(--success-border);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-border: var(--warning-border);
+  --color-destructive: var(--destructive);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-subtle: var(--destructive-subtle);
+  --color-destructive-border: var(--destructive-border);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-border: var(--info-border);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+  /* Set by src/lib/theme.ts for the frame in which light/dark switches. */
+  .theme-switching,
+  .theme-switching * {
+    transition: none !important;
+  }
+  /* One visible focus style everywhere: a 2px brand ring, offset from the element (3:1 on page and card). */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
   }
 }
