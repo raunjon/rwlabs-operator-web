@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { Alert, AlertDescription, AlertTitle } from './alert'
 import { Badge } from './badge'
+import { Field } from './field'
 import { Input } from './input'
 import { Label } from './label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table'
@@ -72,6 +73,42 @@ describe('form fields', () => {
       </>,
     )
     expect(screen.getByRole('textbox', { name: 'Notes' })).toBeDisabled()
+  })
+})
+
+describe('Field', () => {
+  it('labels its control and has it read the error before the hint', () => {
+    render(
+      <Field id="f-email" label="Email" hint="Work email preferred" error="Enter your email">
+        <Input type="email" />
+      </Field>,
+    )
+    const input = screen.getByLabelText('Email')
+    expect(input).toHaveAttribute('id', 'f-email')
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    expect(input).toHaveAccessibleDescription('Enter your email Work email preferred')
+    expect(screen.getByText('Enter your email').className).toContain('text-destructive')
+    expect(screen.getByText('Work email preferred').className).toContain('text-muted-foreground')
+  })
+
+  it('describes a control by its hint alone, and as valid, until there is an error', () => {
+    render(
+      <Field id="f-password" label="Password" hint="At least 8 characters">
+        <Input type="password" />
+      </Field>,
+    )
+    const input = screen.getByLabelText('Password')
+    expect(input).toHaveAccessibleDescription('At least 8 characters')
+    expect(input).not.toHaveAttribute('aria-invalid')
+  })
+
+  it('leaves a plain control undescribed', () => {
+    render(
+      <Field id="f-name" label="Name">
+        <Input />
+      </Field>,
+    )
+    expect(screen.getByLabelText('Name')).not.toHaveAttribute('aria-describedby')
   })
 })
 

@@ -5,8 +5,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import { contrastRatio } from '@/lib/contrast'
@@ -276,16 +276,19 @@ export function StyleGuidePage() {
       <Section title="Form fields">
         <div className="grid gap-6 sm:grid-cols-2">
           <Field id="sg-name" label="Event name">
-            <Input id="sg-name" placeholder="Saturday mixer" />
+            <Input placeholder="Saturday mixer" />
           </Field>
           <Field id="sg-email" label="Email" error="Enter an email address like name@example.com">
-            <Input id="sg-email" type="email" defaultValue="not-an-email" aria-invalid aria-describedby="sg-email-error" />
+            <Input type="email" defaultValue="not-an-email" />
+          </Field>
+          <Field id="sg-password" label="Password" hint="At least 8 characters">
+            <Input type="password" autoComplete="new-password" />
           </Field>
           <Field id="sg-venue" label="Venue (disabled)">
-            <Input id="sg-venue" defaultValue="The Loft" disabled />
+            <Input defaultValue="The Loft" disabled />
           </Field>
           <Field id="sg-notes" label="Notes">
-            <Textarea id="sg-notes" placeholder="Anything the team should know" />
+            <Textarea placeholder="Anything the team should know" />
           </Field>
         </div>
       </Section>
@@ -438,19 +441,5 @@ function Section({ title, description, children }: { title: string; description?
       </div>
       {children}
     </section>
-  )
-}
-
-function Field({ id, label, error, children }: { id: string; label: string; error?: string; children: ReactNode }) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      {children}
-      {error && (
-        <p id={`${id}-error`} className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
   )
 }

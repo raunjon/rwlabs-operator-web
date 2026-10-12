@@ -1,4 +1,4 @@
-import { getRouteApi, useNavigate } from '@tanstack/react-router'
+import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { useState, type FormEvent } from 'react'
 import { InternalLinks } from '@/components/internal-links'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -93,9 +93,9 @@ export function LoginPage() {
       </Card>
       <p className="text-sm text-muted-foreground">
         New organiser?{' '}
-        <a href="/signup" className="text-link underline-offset-4 hover:underline">
+        <Link to="/signup" className="text-link underline-offset-4 hover:underline">
           Create an account
-        </a>
+        </Link>
       </p>
       <footer className="mt-6">
         <InternalLinks className="flex gap-4 text-xs text-muted-foreground" />

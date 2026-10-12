@@ -60,7 +60,7 @@ Docker is staging/production only: don't build images locally.
   `X-Jwt-Token` and ends the session on a 401. Sign-in/out (`src/features/auth/api.ts`) use `fetch` + `buildUrl`
   because the gateway's OpenAPI doesn't describe login's body or `?jwt=true`.
 - **Routes:** signed-in pages live under `src/routes/_authenticated/` (guard + session watcher); `/t` is tenant
-  admins only, `/admin` super admins only. `/login`, `/health` and `/style-guide` are public.
+  admins only, `/admin` super admins only. `/login`, `/signup`, `/health` and `/style-guide` are public.
 - **Internal pages** (`/style-guide`, `/health`) and their links (sidebar "Internal", login footer) exist only when
   `config.showInternalPages` is on: `npm run dev` and builds with `VITE_APP_ENV=staging` (the staging compose file
   passes it as a build arg). Any other build is production and serves them as not found.

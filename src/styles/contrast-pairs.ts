@@ -19,6 +19,8 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
   text('muted-foreground', 'muted'),
   text('link', 'background'),
   text('link', 'card'),
+  // The signup page's "sign in" link inside a destructive alert.
+  text('link', 'destructive-subtle'),
   text('primary-foreground', 'primary'),
   text('primary-foreground', 'primary-hover'),
   text('secondary-foreground', 'secondary'),
