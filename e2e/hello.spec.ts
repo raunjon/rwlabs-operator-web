@@ -62,3 +62,30 @@ test('the start page links to the system health page', async ({ page }) => {
   await expect(page).toHaveURL(/\/health$/)
   await expect(page.getByRole('heading', { level: 1, name: 'System health' })).toBeVisible()
 })
+
+test('the style guide passes every contrast check in light and dark', async ({ page }) => {
+  await mockGatewayHealth(page)
+  await page.goto('/style-guide')
+  const contrast = page.getByRole('region', { name: 'Contrast' })
+  await expect(contrast.getByText(/^Pass /).first()).toBeVisible()
+  await expect(contrast.getByText(/^Fails /)).toHaveCount(0)
+  // neutral-50 from each mode's palette.
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(247, 248, 249)')
+
+  await page.getByText('Dark', { exact: true }).click()
+  await expect(page.locator('html')).toHaveClass(/\bdark\b/)
+  await expect(page.getByText(/showing the dark theme/)).toBeVisible()
+  await expect(contrast.getByText(/^Fails /)).toHaveCount(0)
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(17, 24, 32)')
+
+  // The choice survives a reload.
+  await page.reload()
+  await expect(page.locator('html')).toHaveClass(/\bdark\b/)
+})
+
+test('the start page links to the style guide', async ({ page }) => {
+  await mockGatewayHealth(page)
+  await page.goto('/')
+  await page.getByRole('link', { name: 'Style guide' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Style guide' })).toBeVisible()
+})
