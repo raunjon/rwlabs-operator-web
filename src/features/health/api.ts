@@ -56,6 +56,9 @@ export async function fetchGatewayHealthReport(timeoutMs: number = HEALTH_TIMEOU
   }
 }
 
+export async function fetchGatewayHealth(timeoutMs: number = HEALTH_TIMEOUT_MS): Promise<GatewayHealth> {
+  return (await fetchGatewayHealthReport(timeoutMs)).status
+}
 
 function parseDetails(body: Record<string, unknown>): GatewayHealthReport['details'] {
   if (!isObject(body.checks) && !isObject(body.services)) return null
@@ -100,3 +103,7 @@ export const gatewayHealthReportQuery = queryOptions({
   queryFn: () => fetchGatewayHealthReport(),
 })
 
+export const gatewayHealthQuery = queryOptions({
+  ...gatewayHealthReportQuery,
+  select: (report: GatewayHealthReport) => report.status,
+})

@@ -54,13 +54,6 @@ Docker is staging/production only: don't build images locally.
 - **TypeScript stays on 5.9.x**: `openapi-typescript` needs `^5`, `typescript-eslint` needs `<6.1`.
 - **npm 11.4 crashes resolving vitest's peers** ("reading 'edgesOut'"). If adding/upgrading test deps fails that way,
   run the install with `npx npm@12 install ...`; the lockfile stays compatible with npm 11's `npm ci`.
-- **Session** (`src/lib/session/`): the gateway JWT is in `sessionStorage` (`session_jwt`) and the in-memory store
-  only. Never copy it into React state, props, URLs or logs; `Session` deliberately has no token field, and only the
-  API layer reads it via `sessionToken()`. Feature requests go through the `api` client, whose middleware adds
-  `X-Jwt-Token` and ends the session on a 401. Sign-in/out (`src/features/auth/api.ts`) use `fetch` + `buildUrl`
-  because the gateway's OpenAPI doesn't describe login's body or `?jwt=true`.
-- **Routes:** signed-in pages live under `src/routes/_authenticated/` (guard + session watcher); `/t` is tenant
-  admins only, `/admin` super admins only. `/login`, `/health` and `/style-guide` are public.
 - **Gateway responses** use the presentable envelope (`{ data, success, ... }` / `{ error: { message, status } }`);
   `toApiError` turns failures into `ApiError`. `/health` is the exception (its own `{ service, status }` shape).
 - **21st.dev components:** install via the shadcn CLI, then replace `next/link`/`next/image`, move Tailwind 3 config
