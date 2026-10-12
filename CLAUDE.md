@@ -37,8 +37,15 @@ Docker is staging/production only: don't build images locally.
   `<a href>` for API downloads: the panel must be movable to its own host by setting `VITE_API_BASE_URL`.
 - **The `api` client looks up `fetch` per call.** openapi-fetch otherwise captures the global fetch at import, which
   bypasses MSW in tests (requests then hit a real gateway on :3000).
-- **Colours only via tokens** in `src/styles/tokens.css` (currently placeholder shadcn neutrals until the real palette
-  arrives). No raw hex/oklch in components.
+- **Colours only via tokens** in `src/styles/tokens.css`: the Figma palette (`--palette-*`, light and dark ramps) and the
+  semantic tokens built from it (`bg-primary`, `text-success`, ...). Components use semantic tokens only; a test fails
+  on any raw hex/rgb/oklch elsewhere in `src/`. Dark mode is the `dark` class on `<html>`, so components need no
+  `dark:` variants. An inline script in `index.html` sets it before the first paint (no light flash while the app
+  loads); `src/lib/theme.ts` takes over after. Keep the storage key and rules in step between the two. When a component puts a new token pair together, add it to
+  `src/styles/contrast-pairs.ts`; `tokens.test.ts` holds every pair to WCAG AA in both modes. Review it all at
+  `/style-guide`.
+- **shadcn CLI resolves our `utils` alias wrongly**: `npx shadcn@3.8.5 add` writes `import { cn } from "cn"` and
+  installs an unrelated npm package called `cn` (plus `radix-ui`). Uninstall both and import from `@/lib/utils`.
 - **Product name** only in `src/config.ts` (`PRODUCT_NAME`).
 - **Generated, committed files:** `src/routeTree.gen.ts` (TanStack Router plugin, rewritten on dev/build) and
   `src/lib/api/schema.d.ts` (`npm run api:types`; the Docker build can't see the gateway repo).

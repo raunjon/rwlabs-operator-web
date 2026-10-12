@@ -62,3 +62,90 @@ test('the start page links to the system health page', async ({ page }) => {
   await expect(page).toHaveURL(/\/health$/)
   await expect(page.getByRole('heading', { level: 1, name: 'System health' })).toBeVisible()
 })
+
+test('the style guide passes every contrast check in light and dark', async ({ page }) => {
+  await mockGatewayHealth(page)
+  await page.goto('/style-guide')
+  const contrast = page.getByRole('region', { name: 'Contrast' })
+  await expect(contrast.getByText(/^Pass /).first()).toBeVisible()
+  await expect(contrast.getByText(/^Fails /)).toHaveCount(0)
+  // neutral-50 from each mode's palette.
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(247, 248, 249)')
+
+  await page.getByText('Dark', { exact: true }).click()
+  await expect(page.locator('html')).toHaveClass(/\bdark\b/)
+  await expect(page.getByText(/showing the dark theme/)).toBeVisible()
+  await expect(contrast.getByText(/^Fails /)).toHaveCount(0)
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(17, 24, 32)')
+
+  // The choice survives a reload.
+  await page.reload()
+  await expect(page.locator('html')).toHaveClass(/\bdark\b/)
+})
+
+test('the start page links to the style guide', async ({ page }) => {
+  await mockGatewayHealth(page)
+  await page.goto('/')
+  await page.getByRole('link', { name: 'Style guide' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Style guide' })).toBeVisible()
+})
+
+// Holds the app module back so the assertions run on the page as first painted, before main.tsx executes.
+async function gotoWithAppHeld(page: Page, path: string) {
+  let release = () => {}
+  const held = new Promise<void>((resolve) => (release = resolve))
+  let intercepted = false
+  // The dev server may add a cache-busting query (?t=...) after a file change.
+  await page.route(/\/src\/main\.tsx(\?.*)?$/, async (route) => {
+    intercepted = true
+    await held
+    await route.fallback()
+  })
+  await mockGatewayHealth(page)
+  await page.goto(path, { waitUntil: 'commit' })
+  await expect.poll(() => intercepted).toBe(true)
+  await expect(page.locator('#root')).toBeEmpty()
+  return release
+}
+
+test('a dark OS setting applies the dark tokens before the app module runs', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  const release = await gotoWithAppHeld(page, '/style-guide')
+  await expect(page.locator('html')).toHaveClass(/\bdark\b/)
+  release()
+  await expect(page.getByText(/showing the dark theme/)).toBeVisible()
+})
+
+test('a stored theme beats the OS setting before the app module runs', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.addInitScript(() => localStorage.setItem('theme', 'dark'))
+  const releaseDark = await gotoWithAppHeld(page, '/style-guide')
+  await expect(page.locator('html')).toHaveClass(/\bdark\b/)
+  releaseDark()
+  await expect(page.getByRole('radio', { name: 'Dark' })).toBeChecked()
+})
+
+test('a stored light theme stays light on a dark OS', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.addInitScript(() => localStorage.setItem('theme', 'light'))
+  const release = await gotoWithAppHeld(page, '/style-guide')
+  await expect(page.locator('html')).not.toHaveClass(/\bdark\b/)
+  release()
+  await expect(page.getByText(/showing the light theme/)).toBeVisible()
+})
+
+test('table body rows highlight on hover but the header row does not', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' })
+  await mockGatewayHealth(page)
+  await page.goto('/style-guide')
+  const table = page.getByRole('region', { name: 'Table' }).getByRole('table')
+
+  const headerRow = table.getByRole('row').filter({ has: page.getByRole('columnheader', { name: 'Name' }) })
+  await headerRow.hover()
+  await expect(headerRow).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+
+  // accent (neutral-100) in light mode.
+  const bodyRow = table.getByRole('row').filter({ hasText: 'Asha Rao' })
+  await bodyRow.hover()
+  await expect(bodyRow).toHaveCSS('background-color', 'rgb(238, 240, 243)')
+})

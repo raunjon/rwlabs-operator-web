@@ -8,9 +8,14 @@ export function HelloPage() {
       <h1 className="text-2xl font-semibold">{config.productName} Operator</h1>
       <p className="text-muted-foreground">Hello world. The operator panel is running.</p>
       <HealthStatus />
-      <Link to="/health" className="inline-block text-sm text-muted-foreground underline-offset-4 hover:underline">
-        System health details
-      </Link>
+      <nav className="flex gap-4 text-sm">
+        <Link to="/health" className="text-muted-foreground underline-offset-4 hover:underline">
+          System health details
+        </Link>
+        <Link to="/style-guide" className="text-muted-foreground underline-offset-4 hover:underline">
+          Style guide
+        </Link>
+      </nav>
     </main>
   )
 }
