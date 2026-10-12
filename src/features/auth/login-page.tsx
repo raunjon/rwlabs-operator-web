@@ -1,5 +1,6 @@
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { useState, type FormEvent } from 'react'
+import { InternalLinks } from '@/components/internal-links'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
@@ -96,6 +97,9 @@ export function LoginPage() {
           Create an account
         </a>
       </p>
+      <footer className="mt-6">
+        <InternalLinks className="flex gap-4 text-xs text-muted-foreground" />
+      </footer>
     </main>
   )
 }

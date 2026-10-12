@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
+import { InternalLinks } from '@/components/internal-links'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { config } from '@/config'
@@ -39,6 +40,15 @@ export function AppShell({ area, nav, children }: { area: string; nav: NavItem[]
             ))}
           </ul>
         </nav>
+        {config.showInternalPages && (
+          <nav aria-label="Internal" className="space-y-1">
+            <p className="px-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">Internal</p>
+            <InternalLinks
+              className="space-y-1"
+              linkClassName="block rounded-sm px-2 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground hover:no-underline"
+            />
+          </nav>
+        )}
         <div className="mt-auto space-y-3">
           <div className="px-2 text-sm">
             <p className="font-medium">{name}</p>
