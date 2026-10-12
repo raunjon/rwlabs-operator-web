@@ -39,7 +39,7 @@ Each step has a product. Do not move on without it.
 | Ticket describes a backend response the code does not produce | Build to the code; add the missing step client-side if the user-visible result is unchanged; name the backend follow-up in PR and ticket |
 | A requested link's target page belongs to another ticket | Leave the link out, say so in the UI comment and PR, comment on the other ticket with both places to wire it |
 | Two server errors share a status | Classify by the fixed server message, mirroring the server's own branching, and test both |
-| A test fails only when other heavy jobs run alongside | Rerun it alone before touching it; if it passes, report the load cause and move on; if not, it is a bug |
+| A test fails in the full run | Rerun the full check set with nothing else running. Only a clean full run lets the first failure be called load, and the report says both runs happened. A repeat failure, even once, is a defect (a timing race or shared resource) to find and fix, never to skip or loosen |
 | Something in the environment is odd (a file staged you did not stage) | Investigate, undo only what is yours, mention it |
 | A review finding arrives | Treat it as a claim: reproduce it with a failing test first, then fix; pick the fix that keeps the better user outcome and say why |
 | A cache, retry or timeout policy is a choice | Choose the deterministic option the tests can pin down; document the alternative rejected |
@@ -51,7 +51,7 @@ Any of these thoughts means stop and do the step it skipped.
 
 - "The ticket says the backend returns X." → Open the controller.
 - "Tests pass, so it works." → Run the full check set, then the real system.
-- "That failure is flaky." → Rerun it alone; decide from evidence.
+- "That failure is flaky." → A clean full run with nothing else running is the only evidence; a repeat failure is a bug.
 - "The reviewer is wrong." → Reproduce first; a failing test settles it.
 - "The route will exist soon." → Then the link ships then.
 - "I'll ask the user before starting." → Routine calls are yours; ask only when the answer changes the work materially.
