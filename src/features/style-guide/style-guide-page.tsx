@@ -77,18 +77,47 @@ const TYPE_SCALE = [
   ['text-xs', 'xs · 12px'],
 ] as const
 
-// Current value of each CSS custom property. Read during render: the theme subscription re-renders this page
-// whenever light/dark switches.
+// Current value of each CSS custom property, as written in the stylesheet (production CSS is minified, so white
+// reads back in its three-digit form). Read during render: the theme subscription re-renders this page whenever
+// light/dark switches.
 function readTokenValues(names: string[]): Record<string, string> {
   const style = getComputedStyle(document.documentElement)
   return Object.fromEntries(names.map((name) => [name, style.getPropertyValue(`--${name}`).trim()]))
 }
 
+// Each token as the browser computes it, a form contrastRatio always reads, whatever the stylesheet wrote.
+function resolveColours(names: string[]): Record<string, string> {
+  const probe = document.createElement('span')
+  document.body.append(probe)
+  try {
+    return Object.fromEntries(
+      names.map((name) => {
+        probe.style.color = ''
+        probe.style.color = `var(--${name})`
+        return [name, getComputedStyle(probe).color]
+      }),
+    )
+  } finally {
+    probe.remove()
+  }
+}
+
+// null when a colour can't be read, so one odd value shows as "–" instead of breaking the page.
+function safeContrast(fg: string | undefined, bg: string | undefined): number | null {
+  if (!fg || !bg) return null
+  try {
+    return contrastRatio(fg, bg)
+  } catch {
+    return null
+  }
+}
+
+const CONTRAST_TOKEN_NAMES = [...new Set(CONTRAST_PAIRS.flatMap(({ fg, bg }) => [fg, bg]))]
+
 const TOKEN_NAMES = [
   ...new Set([
     ...RAMPS.flatMap((ramp) => STEPS.map((step) => `palette-${ramp}-${step}`)),
     ...SEMANTIC_TOKENS,
-    ...CONTRAST_PAIRS.flatMap(({ fg, bg }) => [fg, bg]),
   ]),
 ]
 
@@ -96,6 +125,7 @@ const TOKEN_NAMES = [
 export function StyleGuidePage() {
   const theme = useResolvedTheme()
   const values = readTokenValues(TOKEN_NAMES)
+  const colours = resolveColours(CONTRAST_TOKEN_NAMES)
 
   return (
     <main className="mx-auto max-w-6xl space-y-12 px-6 py-12">
@@ -167,7 +197,7 @@ export function StyleGuidePage() {
           </TableHeader>
           <TableBody>
             {CONTRAST_PAIRS.map(({ fg, bg, min }) => {
-              const ratio = values[fg] && values[bg] ? contrastRatio(values[fg], values[bg]) : null
+              const ratio = safeContrast(colours[fg], colours[bg])
               return (
                 <TableRow key={`${fg}/${bg}`}>
                   <TableCell>

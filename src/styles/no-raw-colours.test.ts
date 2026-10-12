@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-// Colours live only in tokens.css. Anything else in src/ must use token utilities or var(--token).
-const sources = import.meta.glob<string>(['/src/**/*.{ts,tsx}', '!/src/**/*.test.{ts,tsx}', '!/src/**/*.gen.ts'], {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-})
+// Colours live only in tokens.css. Anything else in src/ must use token utilities or var(--token). contrast.ts is
+// exempt: it parses colour strings, so it names the formats.
+const sources = import.meta.glob<string>(
+  ['/src/**/*.{ts,tsx}', '!/src/**/*.test.{ts,tsx}', '!/src/**/*.gen.ts', '!/src/lib/contrast.ts'],
+  { query: '?raw', import: 'default', eager: true },
+)
 
 const RAW_COLOUR = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|oklch|oklab|lab|lch)\(|-\[#/gi
 
