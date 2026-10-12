@@ -22,6 +22,8 @@ environment, so focus on those, not style.
 - **A 401 from any call ends the session** and returns to login with the attempted URL kept. Flag a call path that
   swallows a 401 or retries it.
 - **Logout clears the session even if the logout request fails.**
+- **Signup and invitation accept return auth's raw token digest** (`data.token`), not a gateway JWT. The panel
+  ignores it and signs in to get a JWT. Flag code that stores, forwards, decodes or shows that digest.
 
 ### 2. Every API call goes through the API layer
 
@@ -32,8 +34,16 @@ environment, so focus on those, not style.
   can't carry the auth header.
 - **Errors become `ApiError` via `toApiError`.** Flag code that reads `response.json().error.message` by hand, or
   shows raw HTML error bodies (nginx/Vite proxy pages) to users.
-- **Validation errors are one joined message, not per field** (presentable gem). Flag code that pretends to map
-  them onto individual fields.
+- **Calls made before there is a session** (login, logout, signup, invitation lookup and accept) go through
+  `requestWithoutSession` in `src/features/auth/api.ts`. Flag a new pre-session call made with the `api` client
+  (it would attach a session token and end the session on 401) or with a hand-rolled fetch elsewhere.
+- **Server validation errors are one joined message, not per field** (presentable gem) and show at form level.
+  Browser-side checks (the zod schemas in `src/features/auth/*-schema.ts`, built from `form-rules.ts`) are per
+  field. Flag code that pretends to map server messages onto fields, a browser rule that differs from auth's
+  (password minimum 8), or a server-reported case shown without the server's message.
+- **Two errors on one status are told apart by the server's fixed message** (the signup 409s), mirroring the
+  server's own branch. Flag classification by anything else, and a message string in the panel that has drifted
+  from auth's controller.
 - **Generated types match the gateway.** If the PR depends on a new or changed gateway endpoint,
   `src/lib/api/schema.d.ts` must be regenerated (`npm run api:types`) in the same PR, not hand-edited. Flag `as`
   casts or `any` that paper over a type the schema should provide.
@@ -58,7 +68,11 @@ message and a retry), success, plus 403 ("You don't have access to this") and th
 - a query with no error branch, or one that can stay pending forever (no timeout on something that can hang);
 - a blank screen or a spinner where the spec asks for an empty state or an error;
 - filters or pagination kept in component state instead of the URL search params;
-- mutations that don't invalidate the queries that show the changed data.
+- mutations that don't invalidate the queries that show the changed data;
+- cached data that outlives the server state it describes: a lookup by a one-shot token must be invalidated the
+  moment the token is consumed (`useAcceptInvitation`, `refetchType: 'none'`), or Back shows a usable form for a
+  dead link;
+- a loading state that isn't `Skeleton` blocks inside a `role="status"` group with a label.
 
 ### 5. Multi-tenancy and the two shells
 
@@ -68,6 +82,9 @@ message and a retry), success, plus 403 ("You don't have access to this") and th
 - **Super-admin and tenant routes stay separate** (`/admin/*` vs `/t/*`), each behind its role guard. Flag a route
   without a guard.
 - The UI must not assume a single tenant anywhere (no hardcoded tenant ids, names or "ThirtyPlus" copy).
+- **`/invitations/accept` is public and stays reachable while signed in** by design: the page asks the user to
+  sign out before showing the form. Flag a redirect guard added to it, and flag any page that ends a session
+  without the user choosing to.
 
 ### 6. Design system
 
@@ -83,6 +100,11 @@ The rules below are summarised from [`docs/design-system.md`](docs/design-system
   (no `next/*` imports, tokens only, keyboard accessible, licence noted). Flag a copied component that skips this.
 - **Accessibility:** interactive elements are real `<button>`/`<a>`, form inputs have labels, focus is visible,
   status changes use `role="status"`. Tests querying by role and name are the cheapest proof.
+- **Form controls go through `Field`** (`src/components/ui/field.tsx`): label, hint, error, and the `id`,
+  `aria-invalid` and `aria-describedby` wiring on its single child. Flag inputs wired by hand, an error text with
+  no `aria-describedby` back to its control, and a hint that disappears when an error appears.
+- **Every link's target exists.** Check `src/routeTree.gen.ts`; a recovery link to a page another ticket hasn't
+  built yet is a finding (the one known exception is noted under "What not to flag").
 
 ### 7. Tests
 
@@ -90,11 +112,18 @@ Every behaviour change needs a test that fails without it. Look for:
 - **HTTP mocked with MSW at the network boundary** (`src/test/msw.ts`, `onUnhandledRequest: 'error'`), not by
   stubbing `fetch` or the API module. A test must never reach a real gateway; one is often running on :3000 locally.
 - **Outcomes asserted through the UI** (`getByRole`, `findByText`), not component internals or hook calls.
-- **The unhappy paths:** network error, gateway HTML error page, 401, 403, 422 with a message, empty list, and a
-  response that never arrives. A feature tested only against a 200 is under-tested.
+- **The unhappy paths:** network error, gateway HTML error page, 401, 403, 404 (a one-shot token gone), 409 and
+  422 with the server's message, empty list, a response that never arrives, and the disabled state while a
+  request is in flight. A feature tested only against a 200 is under-tested.
+- **Recovery links are clicked, not just asserted by `href`.** A test that checks `toHaveAttribute('href', ...)`
+  proves nothing about where the user ends up; click it and assert the destination heading and path.
+- **Cache behaviour across navigation is tested through the router** (navigate away, `router.history.back()`,
+  assert a fresh request), not by inspecting the query client.
 - **e2e (`e2e/`) stays backend-free:** mock with `page.route`. Add an e2e test for anything that crosses routes
-  (login → redirect, deep links).
-- **A clean run:** `npm test`, `npm run typecheck`, `npm run lint` (zero warnings) and `npm run build` all pass.
+  (login → redirect, deep links). Specs share `e2e/support/jwt.ts` for gateway-shaped tokens.
+- **A clean run:** `npm test`, `npm run typecheck`, `npm run lint` (zero warnings) and `npm run build` all pass,
+  plus `npm run e2e` when routes or pages changed. A failure that appears only while e2e or a dev server runs
+  alongside is load, not a bug: rerun the file alone before asking for a change.
 
 ## What not to flag
 
@@ -105,6 +134,10 @@ Every behaviour change needs a test that fails without it. Look for:
 - **Generated files** (`src/routeTree.gen.ts`, `src/lib/api/schema.d.ts`) — review the PR's reason for changing
   them, not their contents.
 - **Lint and formatting** that ESLint already enforces.
+- **The sign-in request right after signup or invitation accept.** The gateway returns no JWT there; the second
+  request is deliberate and tracked as a gateway follow-up (`?jwt=true` on those routes).
+- **The login page's `/forgot-password` link** until OW-6 lands and repoints it to `/password/forgot`.
+- **`.claude/launch.json`**, which is git-ignored local tooling.
 
 ## How to report
 
