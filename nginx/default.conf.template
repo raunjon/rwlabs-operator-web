@@ -1,3 +1,11 @@
+# /health is both the gateway's JSON health check and the panel's System health page. A browser opening it asks for
+# HTML and gets the page; everything else (the page's own fetch, curl, deploy.sh) gets the gateway. vite.proxy.ts
+# does the same in dev. (This file is included at http level, where map must live.)
+map $http_accept $health_wants_page {
+    ~*text/html 1;
+    default     0;
+}
+
 server {
     listen 80;
     server_name _;
@@ -11,14 +19,26 @@ server {
     resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
     set $gateway_upstream ${GATEWAY_UPSTREAM};
 
-    # API paths -> gateway. Same list as vite.proxy.ts.
-    location ~ ^/(auth/api/|operator/api/|health$) {
+    # API paths -> gateway. Same list as vite.proxy.ts (with /health below).
+    location ~ ^/(auth/api/|operator/api/) {
         proxy_pass $gateway_upstream;
         proxy_set_header Host ${GATEWAY_HOST_HEADER};
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         client_max_body_size 20m;   # CSV lead imports
+    }
+
+    # /health -> gateway, except for browsers, which get the SPA (see the map above).
+    location = /health {
+        if ($health_wants_page) {
+            rewrite ^ /index.html last;
+        }
+        proxy_pass $gateway_upstream;
+        proxy_set_header Host ${GATEWAY_HOST_HEADER};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 
     # Hashed build assets: cache forever. A missing one is a real 404, never index.html (a tab left open across a

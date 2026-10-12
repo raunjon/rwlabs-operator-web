@@ -13,6 +13,6 @@ describe('HelloPage', () => {
     expect(await screen.findByRole('heading', { level: 1, name: `${PRODUCT_NAME} Operator` })).toBeInTheDocument()
     expect(screen.getByText('Hello world. The operator panel is running.')).toBeInTheDocument()
     expect(await screen.findByText('Gateway reachable. All services are healthy.')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'System health details' })).toHaveAttribute('href', '/status')
+    expect(screen.getByRole('link', { name: 'System health details' })).toHaveAttribute('href', '/health')
   })
 })

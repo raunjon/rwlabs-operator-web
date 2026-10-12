@@ -30,6 +30,9 @@ Docker is staging/production only: don't build images locally.
 
 - **One list of proxied paths** (`/auth/api/`, `/operator/api/`, `/health`) lives in two places that must match:
   `vite.proxy.ts` (dev) and `nginx/default.conf.template` (staging/prod).
+- **`/health` is split by the `Accept` header**: a browser opening it (asks for `text/html`) gets the System health
+  page; everything else (the page's own fetch, curl, `deploy.sh`) is proxied to the gateway. Both proxy configs do
+  this; keep them in step.
 - **Every API URL goes through `buildUrl`** (`src/lib/api/url.ts`) or the `api` client. Never hand-build URLs or use
   `<a href>` for API downloads: the panel must be movable to its own host by setting `VITE_API_BASE_URL`.
 - **The `api` client looks up `fetch` per call.** openapi-fetch otherwise captures the global fetch at import, which
