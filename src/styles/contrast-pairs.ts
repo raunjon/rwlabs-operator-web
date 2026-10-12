@@ -24,6 +24,9 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
   text('secondary-foreground', 'secondary'),
   text('secondary-foreground', 'secondary-hover'),
   text('accent-foreground', 'accent'),
+  // Table rows turn accent on hover/selection while cells keep inheriting foreground and headings stay muted.
+  text('foreground', 'accent'),
+  text('muted-foreground', 'accent'),
   text('destructive-foreground', 'destructive-hover'),
   ...STATUSES.flatMap((status) => [
     text(status, 'background'),
