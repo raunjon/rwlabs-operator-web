@@ -79,6 +79,8 @@ test('a taken email is explained, with a way to sign in instead', async ({ page 
   expect(signups).toHaveLength(1)
   expect(await storedToken(page)).toBeNull()
 
+  // The only way out offered is one that exists; following it must reach a real page.
+  await expect(alert.getByRole('link')).toHaveText(['Sign in'])
   await alert.getByRole('link', { name: 'Sign in' }).click()
   await expect(page).toHaveURL(/\/login$/)
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()

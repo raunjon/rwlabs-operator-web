@@ -16,7 +16,8 @@ const PASSWORD_HINT = `At least ${PASSWORD_MIN_LENGTH} characters`
 
 // Self-serve signup: an organisation and its first admin in one form, signed in on success (OW-4). The browser
 // checks each field (signupSchema) so those messages sit next to their field; what the server refuses is one
-// message shown above the button, with a way out for the two conflicts it reports.
+// message shown above the button, with a way out for the two conflicts it reports. A taken email offers sign-in
+// only: the password-reset pages are OW-6 and link from here once they exist.
 export function SignupPage() {
   const navigate = useNavigate()
   const signUp = useSignUp()
@@ -103,11 +104,7 @@ function FailureAlert({ failure }: { failure: SignUpFailure }) {
             <Link to="/login" search={{}} className={linkClass}>
               Sign in
             </Link>{' '}
-            to that account, or{' '}
-            <a href="/forgot-password" className={linkClass}>
-              reset your password
-            </a>
-            .
+            to that account instead.
           </p>
         )}
         {failure.kind === 'created-not-signed-in' && (

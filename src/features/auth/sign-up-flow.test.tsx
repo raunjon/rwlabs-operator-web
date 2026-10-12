@@ -117,7 +117,7 @@ describe('signing up', () => {
     expect(await screen.findByLabelText('Password')).toHaveAccessibleDescription('At least 8 characters')
   })
 
-  it('offers to sign in or reset the password when the email is taken', async () => {
+  it('offers to sign in when the email is taken, and that link works', async () => {
     signupAnswers(() => refused(409, EMAIL_TAKEN))
     const router = renderApp('/signup')
     await fill()
@@ -125,10 +125,15 @@ describe('signing up', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent(EMAIL_TAKEN)
-    expect(within(alert).getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')
-    expect(within(alert).getByRole('link', { name: /reset your password/i })).toHaveAttribute('href', '/forgot-password')
     expect(path(router)).toBe('/signup')
     expect(screen.getByLabelText('Email')).toHaveValue('ira@example.com')
+    // Only ways out that exist: password reset (OW-6) isn't built yet, so it isn't offered.
+    const links = within(alert).getAllByRole('link')
+    expect(links.map((link) => link.textContent)).toEqual(['Sign in'])
+
+    await userEvent.click(links[0])
+    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
+    expect(path(router)).toBe('/login')
   })
 
   it('asks to try again when the organisation name is in use, keeping what was typed', async () => {
