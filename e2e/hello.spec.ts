@@ -149,3 +149,21 @@ test('table body rows highlight on hover but the header row does not', async ({ 
   await bodyRow.hover()
   await expect(bodyRow).toHaveCSS('background-color', 'rgb(238, 240, 243)')
 })
+
+// The production build minifies colours (#ffffff becomes #fff), which the dev server never does.
+test('the style guide copes with minified colour values', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await mockGatewayHealth(page)
+  await page.goto('/style-guide')
+  await page.addStyleTag({ content: ':root { --palette-neutral-25: #fff; --palette-primary-700: #b82c3a }' })
+
+  await page.getByText('Light', { exact: true }).click()
+  await expect(page.getByText(/showing the light theme/)).toBeVisible()
+  const contrast = page.getByRole('region', { name: 'Contrast' })
+  const cardRow = contrast.getByRole('row').filter({ hasText: '--foreground' }).filter({ hasText: '--card' }).first()
+  await expect(cardRow).toContainText('15.82:1')
+  await expect(contrast.getByText(/^Fails /)).toHaveCount(0)
+  expect(errors).toEqual([])
+})
