@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { server } from '@/test/msw'
 import { fetchGatewayHealth } from './api'
@@ -34,5 +34,15 @@ describe('fetchGatewayHealth', () => {
   it('is unreachable on an empty error response (the Vite proxy with no gateway running)', async () => {
     server.use(http.get('*/health', () => new HttpResponse(null, { status: 500 })))
     await expect(fetchGatewayHealth()).resolves.toBe('unreachable')
+  })
+
+  it('is unreachable when the gateway never answers (gives up after the timeout)', async () => {
+    server.use(
+      http.get('*/health', async () => {
+        await delay('infinite')
+        return HttpResponse.json({ service: 'gateway', status: 'ok' })
+      }),
+    )
+    await expect(fetchGatewayHealth(50)).resolves.toBe('unreachable')
   })
 })

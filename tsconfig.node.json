@@ -17,5 +17,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "vite.proxy.ts", "vite.proxy.test.ts", "playwright.config.ts", "e2e"]
+  "include": ["vite.config.ts", "vite.proxy.ts", "vite.proxy.test.ts", "playwright.config.ts", "e2e", "scripts"]
 }

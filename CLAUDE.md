@@ -16,6 +16,9 @@ gateway. Design spec: `docs/superpowers/specs/2026-10-12-operator-web-v1-design.
     npm run typecheck && npm run lint && npm run build
     npm run api:types                # regenerate src/lib/api/schema.d.ts from the gateway's OpenAPI file
 
+`npm run dev` first runs `scripts/assert-port-free.ts` (predev): Vite's strictPort misses a conflict held on IPv4 on
+macOS, so this refuses to start if anything answers on 127.0.0.1 or ::1 port 3020.
+
 Locally the panel also starts/stops with `../scripts/start-all-services.sh` / `close-all-services.sh`.
 Docker is staging/production only: don't build images locally.
 
