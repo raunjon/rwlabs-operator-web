@@ -36,7 +36,7 @@ export function decodeSession(jwt: string): Session | null {
     role,
     roleDisplayName: text(claims.role_display_name),
     tenantId: integer(claims.tenant_id),
-    expiresAt: timestamp(claims.expires_at),
+    expiresAt: parseTimestamp(claims.expires_at),
   }
 }
 
@@ -55,10 +55,11 @@ function integer(value: unknown): number | null {
 }
 
 // Auth sends Unix seconds; accept milliseconds or an ISO string too, in case the gateway's serialiser changes.
-function timestamp(value: unknown): number | null {
+// Shared with other gateway payloads that carry a time (an invitation's expiry).
+export function parseTimestamp(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value < 1e12 ? value * 1000 : value
   if (typeof value === 'string' && value.trim()) {
-    const parsed = /^\d+$/.test(value) ? timestamp(Number(value)) : Date.parse(value)
+    const parsed = /^\d+$/.test(value) ? parseTimestamp(Number(value)) : Date.parse(value)
     return parsed !== null && Number.isFinite(parsed) ? parsed : null
   }
   return null

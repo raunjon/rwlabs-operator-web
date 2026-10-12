@@ -2,7 +2,7 @@ import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { ApiError } from '@/lib/api/errors'
 import { server } from '@/test/msw'
-import { NO_RESPONSE, requestSignIn, requestSignOut, requestSignUp } from './api'
+import { NO_RESPONSE, requestAcceptInvitation, requestInvitationLookup, requestSignIn, requestSignOut, requestSignUp } from './api'
 
 describe('requestSignIn', () => {
   it('posts the credentials with the device headers and returns the JWT', async () => {
@@ -166,5 +166,97 @@ describe('requestSignUp', () => {
       }),
     )
     await expect(requestSignUp(account, 50)).rejects.toMatchObject({ status: NO_RESPONSE })
+  })
+})
+
+describe('requestInvitationLookup', () => {
+  it('asks for the invite by token, without device headers or a session token, and reads it', async () => {
+    let seen: { url: string; headers: Headers } | undefined
+    server.use(
+      http.get('*/auth/api/invitations/lookup', ({ request }) => {
+        seen = { url: request.url, headers: request.headers }
+        return HttpResponse.json({
+          data: { email: 'new@example.com', role: 'lead_manager', tenant_name: 'Acme Events', expires_at: 1_900_000_000 },
+          success: true,
+        })
+      }),
+    )
+
+    await expect(requestInvitationLookup('abc+/=')).resolves.toEqual({
+      email: 'new@example.com',
+      role: 'lead_manager',
+      tenantName: 'Acme Events',
+      expiresAt: 1_900_000_000_000,
+    })
+    const url = new URL(seen!.url)
+    expect(url.pathname).toBe('/auth/api/invitations/lookup')
+    expect(url.searchParams.get('token')).toBe('abc+/=')
+    expect(seen!.headers.get('X-Jwt-Token')).toBeNull()
+  })
+
+  it('copes with an ISO expiry and a missing one', async () => {
+    server.use(
+      http.get('*/auth/api/invitations/lookup', () =>
+        HttpResponse.json({ data: { email: 'n@example.com', role: 'admin', tenant_name: 'Acme', expires_at: '2030-03-17T17:46:40.000Z' } }),
+      ),
+    )
+    await expect(requestInvitationLookup('t')).resolves.toMatchObject({ expiresAt: 1_900_000_000_000 })
+    server.use(
+      http.get('*/auth/api/invitations/lookup', () =>
+        HttpResponse.json({ data: { email: 'n@example.com', role: 'admin', tenant_name: 'Acme' } }),
+      ),
+    )
+    await expect(requestInvitationLookup('t')).resolves.toMatchObject({ expiresAt: null })
+  })
+
+  it('rejects a 404 with the server message', async () => {
+    server.use(
+      http.get('*/auth/api/invitations/lookup', () =>
+        HttpResponse.json({ error: { message: 'Invitation not found or no longer valid', status: 404 }, success: false }, { status: 404 }),
+      ),
+    )
+    await expect(requestInvitationLookup('stale')).rejects.toEqual(new ApiError(404, 'Invitation not found or no longer valid'))
+  })
+
+  it('rejects a success without an email', async () => {
+    server.use(http.get('*/auth/api/invitations/lookup', () => HttpResponse.json({ data: { role: 'admin' }, success: true })))
+    await expect(requestInvitationLookup('t')).rejects.toMatchObject({ status: 200 })
+  })
+
+  it('rejects with no status on a network error', async () => {
+    server.use(http.get('*/auth/api/invitations/lookup', () => HttpResponse.error()))
+    await expect(requestInvitationLookup('t')).rejects.toMatchObject({ status: NO_RESPONSE })
+  })
+})
+
+describe('requestAcceptInvitation', () => {
+  const acceptance = { token: 'abc', firstName: 'Ira', lastName: 'S', password: 'password123' }
+
+  it("posts the token and details in the server's field names, with the device headers", async () => {
+    let seen: { headers: Headers; body: unknown } | undefined
+    server.use(
+      http.post('*/auth/api/invitations/accept', async ({ request }) => {
+        seen = { headers: request.headers, body: await request.json() }
+        return HttpResponse.json({ data: { token: 'raw-auth-token', role_name: 'admin' }, success: true }, { status: 201 })
+      }),
+    )
+    await expect(requestAcceptInvitation(acceptance)).resolves.toBeUndefined()
+    expect(seen!.body).toEqual({ token: 'abc', first_name: 'Ira', last_name: 'S', password: 'password123' })
+    expect(seen!.headers.get('X-Platform')).toBe('web')
+    expect(seen!.headers.get('X-Device-Identifier')).toBeTruthy()
+    expect(seen!.headers.get('X-Jwt-Token')).toBeNull()
+  })
+
+  it.each([
+    [404, 'Invitation not found or no longer valid'],
+    [409, 'An account with this email already exists'],
+    [422, 'Password is too short (minimum is 8 characters)'],
+  ])('rejects a %i with the server message', async (status, message) => {
+    server.use(
+      http.post('*/auth/api/invitations/accept', () =>
+        HttpResponse.json({ error: { message, status }, success: false }, { status }),
+      ),
+    )
+    await expect(requestAcceptInvitation(acceptance)).rejects.toEqual(new ApiError(status, message))
   })
 })

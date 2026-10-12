@@ -17,6 +17,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as StyleGuideRouteImport } from './routes/style-guide'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedTRouteImport } from './routes/_authenticated/t'
+import { Route as InvitationsAcceptRouteImport } from './routes/invitations/accept'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedTIndexRouteImport } from './routes/_authenticated/t/index'
 
@@ -59,6 +60,11 @@ const AuthenticatedTRoute = AuthenticatedTRouteImport.update({
   path: '/t',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const InvitationsAcceptRoute = InvitationsAcceptRouteImport.update({
+  id: '/invitations/accept',
+  path: '/invitations/accept',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/style-guide': typeof StyleGuideRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/t': typeof AuthenticatedTRouteWithChildren
+  '/invitations/accept': typeof InvitationsAcceptRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/t/': typeof AuthenticatedTIndexRoute
 }
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/style-guide': typeof StyleGuideRoute
+  '/invitations/accept': typeof InvitationsAcceptRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/t': typeof AuthenticatedTIndexRoute
 }
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/style-guide': typeof StyleGuideRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/t': typeof AuthenticatedTRouteWithChildren
+  '/invitations/accept': typeof InvitationsAcceptRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/t/': typeof AuthenticatedTIndexRoute
 }
@@ -113,10 +122,19 @@ export interface FileRouteTypes {
     | '/style-guide'
     | '/admin'
     | '/t'
+    | '/invitations/accept'
     | '/admin/'
     | '/t/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/health' | '/login' | '/signup' | '/style-guide' | '/admin' | '/t'
+  to:
+    | '/'
+    | '/health'
+    | '/login'
+    | '/signup'
+    | '/style-guide'
+    | '/invitations/accept'
+    | '/admin'
+    | '/t'
   id:
     | '__root__'
     | '/'
@@ -127,6 +145,7 @@ export interface FileRouteTypes {
     | '/style-guide'
     | '/_authenticated/admin'
     | '/_authenticated/t'
+    | '/invitations/accept'
     | '/_authenticated/admin/'
     | '/_authenticated/t/'
   fileRoutesById: FileRoutesById
@@ -138,6 +157,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
   StyleGuideRoute: typeof StyleGuideRoute
+  InvitationsAcceptRoute: typeof InvitationsAcceptRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -197,6 +217,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/t'
       preLoaderRoute: typeof AuthenticatedTRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/invitations/accept': {
+      id: '/invitations/accept'
+      path: '/invitations/accept'
+      fullPath: '/invitations/accept'
+      preLoaderRoute: typeof InvitationsAcceptRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
@@ -259,6 +286,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
   StyleGuideRoute: StyleGuideRoute,
+  InvitationsAcceptRoute: InvitationsAcceptRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

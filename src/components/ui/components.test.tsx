@@ -5,6 +5,7 @@ import { Badge } from './badge'
 import { Field } from './field'
 import { Input } from './input'
 import { Label } from './label'
+import { Skeleton } from './skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table'
 import { Textarea } from './textarea'
 
@@ -109,6 +110,20 @@ describe('Field', () => {
       </Field>,
     )
     expect(screen.getByLabelText('Name')).not.toHaveAttribute('aria-describedby')
+  })
+})
+
+describe('Skeleton', () => {
+  it('is a pulsing muted block that takes its size from className', () => {
+    render(
+      <div role="status" aria-label="Loading">
+        <Skeleton className="h-4 w-1/2" />
+      </div>,
+    )
+    const block = screen.getByRole('status').firstElementChild as HTMLElement
+    expect(block.className).toContain('animate-pulse')
+    expect(block.className).toContain('bg-muted')
+    expect(block.className).toContain('h-4 w-1/2')
   })
 })
 

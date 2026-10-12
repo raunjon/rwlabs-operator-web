@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import { contrastRatio } from '@/lib/contrast'
@@ -291,6 +292,16 @@ export function StyleGuidePage() {
             <Textarea placeholder="Anything the team should know" />
           </Field>
         </div>
+      </Section>
+
+      <Section title="Loading" description="Skeleton blocks stand in for content while it loads; the group announces itself as busy.">
+        <Card className="max-w-sm">
+          <CardContent role="status" aria-label="Loading example" className="space-y-3">
+            <Skeleton className="h-6 w-2/3" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-9 w-full" />
+          </CardContent>
+        </Card>
       </Section>
 
       <Section title="Cards">
