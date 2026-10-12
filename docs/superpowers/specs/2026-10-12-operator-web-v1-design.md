@@ -118,7 +118,10 @@ Contract with the gateway (as implemented today):
 2. Every later request sends `X-Jwt-Token: <jwt>`. The gateway extracts the auth token and the device headers from
    it and re-verifies with auth on each request.
 3. Device headers on login: `X-Platform: web`, `X-Device-Identifier` (a random id generated once per browser and
-   kept in `localStorage`), `X-App-Version` (the build's version), `X-Api-Version`.
+   kept in `localStorage`), `X-App-Version` (the build's version), `X-OS-Version` (the OS family; auth rejects a
+   login without it), `X-Api-Version`.
+4. With `?jwt=true` the response is `{ jwt, success }` at the top level (not the usual `data` envelope). Errors use
+   the normal envelope: wrong credentials 401, a suspended organisation 403.
 
 The app decodes the JWT payload (no signature check; that is the server's job) to read `role_name`, `tenant_id`,
 `expires_at`, `first_name`, `last_name` and `email`.
