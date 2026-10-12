@@ -24,3 +24,27 @@ test('an unknown deep link shows the not-found page', async ({ page }) => {
   await page.getByRole('link', { name: 'Go to the start page' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'RWLabs Operator' })).toBeVisible()
 })
+
+test('the status page shows the breakdown for each service', async ({ page }) => {
+  await page.route('**/health', (route) =>
+    route.fulfill({
+      status: 503,
+      json: {
+        service: 'gateway',
+        status: 'degraded',
+        checks: { secrets: { RAILS_JWT_SECRET: true }, jwt_signing_key_matches_env: true },
+        jwt_secret_fingerprint: 'abc123',
+        services: {
+          auth: { reachable: true, http_status: 200, status: 'ok', checks: { database: true }, jwt_secret_matches_gateway: true },
+          operator: { reachable: false, status: 'down' },
+        },
+      },
+    }),
+  )
+  await page.goto('/')
+  await page.getByRole('link', { name: 'System health details' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'System health' })).toBeVisible()
+  await expect(page.getByText('Degraded', { exact: true })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'operator' }).getByText('down', { exact: true })).toBeVisible()
+  await expect(page.getByText(/^Last refreshed at /)).toBeVisible()
+})
