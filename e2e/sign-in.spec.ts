@@ -1,21 +1,8 @@
 import { expect, type Page, test } from '@playwright/test'
 
-// The gateway is mocked with page.route: these tests need no backend. The panel never checks JWT signatures, so a
-// placeholder signature is enough.
-function jwt(claims: Record<string, unknown> = {}): string {
-  const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url')
-  return `${encode({ alg: 'HS256' })}.${encode({
-    user_id: 7,
-    first_name: 'Asha',
-    last_name: 'Rao',
-    email: 'asha@example.com',
-    role_name: 'admin',
-    role_display_name: 'Admin',
-    tenant_id: 3,
-    expires_at: Math.floor(Date.now() / 1000) + 3600,
-    ...claims,
-  })}.signature`
-}
+import { jwt } from './support/jwt'
+
+// The gateway is mocked with page.route: these tests need no backend.
 
 async function mockLogin(page: Page, token: string) {
   const requests: { headers: Record<string, string>; body: unknown }[] = []

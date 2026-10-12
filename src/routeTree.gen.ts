@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as StyleGuideRouteImport } from './routes/style-guide'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedTRouteImport } from './routes/_authenticated/t'
@@ -36,6 +37,11 @@ const HealthRoute = HealthRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StyleGuideRoute = StyleGuideRouteImport.update({
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
   '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/style-guide': typeof StyleGuideRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/t': typeof AuthenticatedTRouteWithChildren
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
   '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/style-guide': typeof StyleGuideRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/t': typeof AuthenticatedTIndexRoute
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/health': typeof HealthRoute
   '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/style-guide': typeof StyleGuideRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/t': typeof AuthenticatedTRouteWithChildren
@@ -100,19 +109,21 @@ export interface FileRouteTypes {
     | '/'
     | '/health'
     | '/login'
+    | '/signup'
     | '/style-guide'
     | '/admin'
     | '/t'
     | '/admin/'
     | '/t/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/health' | '/login' | '/style-guide' | '/admin' | '/t'
+  to: '/' | '/health' | '/login' | '/signup' | '/style-guide' | '/admin' | '/t'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/health'
     | '/login'
+    | '/signup'
     | '/style-guide'
     | '/_authenticated/admin'
     | '/_authenticated/t'
@@ -125,6 +136,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   HealthRoute: typeof HealthRoute
   LoginRoute: typeof LoginRoute
+  SignupRoute: typeof SignupRoute
   StyleGuideRoute: typeof StyleGuideRoute
 }
 
@@ -156,6 +168,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/style-guide': {
@@ -238,6 +257,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   HealthRoute: HealthRoute,
   LoginRoute: LoginRoute,
+  SignupRoute: SignupRoute,
   StyleGuideRoute: StyleGuideRoute,
 }
 export const routeTree = rootRouteImport
