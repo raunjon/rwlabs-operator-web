@@ -146,6 +146,41 @@ export async function requestAcceptInvitation(
   )
 }
 
+// POST /auth/api/password/forgot: asks the server to email a reset link if an account exists for this email.
+// The server always answers 200 with a neutral message so the endpoint can't be used to find out which emails
+// have accounts. No device headers (nothing is issued) and no session (the user is signed out).
+export async function requestForgotPassword(email: string, timeoutMs: number = SIGN_IN_TIMEOUT_MS): Promise<void> {
+  await requestWithoutSession(
+    '/auth/api/password/forgot',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ email }),
+    },
+    timeoutMs,
+  )
+}
+
+export interface PasswordReset {
+  token: string
+  password: string
+}
+
+// POST /auth/api/password/reset: sets a new password for the account the one-use token belongs to. Rejects with
+// a 404 when the link is unknown, used or expired (auth gives the same answer for all three), 422 for a password
+// the server refuses.
+export async function requestResetPassword(reset: PasswordReset, timeoutMs: number = SIGN_IN_TIMEOUT_MS): Promise<void> {
+  await requestWithoutSession(
+    '/auth/api/password/reset',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ token: reset.token, password: reset.password }),
+    },
+    timeoutMs,
+  )
+}
+
 // POST /auth/api/logout so the server revokes the token. Best effort: never rejects and gives up after a few
 // seconds; callers clear the local session before calling (spec §5.2). keepalive lets the request finish even if
 // the user reloads or leaves the page straight after signing out.

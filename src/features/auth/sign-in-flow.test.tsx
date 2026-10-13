@@ -141,8 +141,21 @@ describe('signing in', () => {
 
   it('links to password reset and signup', async () => {
     renderApp('/login')
-    expect(await screen.findByRole('link', { name: 'Forgot password?' })).toHaveAttribute('href', '/forgot-password')
+    expect(await screen.findByRole('link', { name: 'Forgot password?' })).toHaveAttribute('href', '/password/forgot')
     expect(screen.getByRole('link', { name: 'Create an account' })).toHaveAttribute('href', '/signup')
+  })
+
+  it('tells the user to sign in after a successful password reset', async () => {
+    renderApp('/login?reason=password-updated')
+    expect(await screen.findByText('Password updated. Sign in with your new password.')).toBeInTheDocument()
+    expect(screen.queryByText(/session has expired/)).not.toBeInTheDocument()
+  })
+
+  it('ignores an unknown reason', async () => {
+    renderApp('/login?reason=something-else')
+    await screen.findByRole('heading', { name: 'Sign in' })
+    expect(screen.queryByText(/session has expired/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Password updated/)).not.toBeInTheDocument()
   })
 })
 

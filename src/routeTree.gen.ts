@@ -18,6 +18,8 @@ import { Route as StyleGuideRouteImport } from './routes/style-guide'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedTRouteImport } from './routes/_authenticated/t'
 import { Route as InvitationsAcceptRouteImport } from './routes/invitations/accept'
+import { Route as PasswordForgotRouteImport } from './routes/password/forgot'
+import { Route as PasswordResetRouteImport } from './routes/password/reset'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedTIndexRouteImport } from './routes/_authenticated/t/index'
 import { Route as AuthenticatedTTeamRouteImport } from './routes/_authenticated/t/team'
@@ -66,6 +68,16 @@ const InvitationsAcceptRoute = InvitationsAcceptRouteImport.update({
   path: '/invitations/accept',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PasswordForgotRoute = PasswordForgotRouteImport.update({
+  id: '/password/forgot',
+  path: '/password/forgot',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PasswordResetRoute = PasswordResetRouteImport.update({
+  id: '/password/reset',
+  path: '/password/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -91,6 +103,8 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/t': typeof AuthenticatedTRouteWithChildren
   '/invitations/accept': typeof InvitationsAcceptRoute
+  '/password/forgot': typeof PasswordForgotRoute
+  '/password/reset': typeof PasswordResetRoute
   '/t/team': typeof AuthenticatedTTeamRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/t/': typeof AuthenticatedTIndexRoute
@@ -102,6 +116,8 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/style-guide': typeof StyleGuideRoute
   '/invitations/accept': typeof InvitationsAcceptRoute
+  '/password/forgot': typeof PasswordForgotRoute
+  '/password/reset': typeof PasswordResetRoute
   '/t/team': typeof AuthenticatedTTeamRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/t': typeof AuthenticatedTIndexRoute
@@ -117,6 +133,8 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/t': typeof AuthenticatedTRouteWithChildren
   '/invitations/accept': typeof InvitationsAcceptRoute
+  '/password/forgot': typeof PasswordForgotRoute
+  '/password/reset': typeof PasswordResetRoute
   '/_authenticated/t/team': typeof AuthenticatedTTeamRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/t/': typeof AuthenticatedTIndexRoute
@@ -132,6 +150,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/t'
     | '/invitations/accept'
+    | '/password/forgot'
+    | '/password/reset'
     | '/t/team'
     | '/admin/'
     | '/t/'
@@ -143,6 +163,8 @@ export interface FileRouteTypes {
     | '/signup'
     | '/style-guide'
     | '/invitations/accept'
+    | '/password/forgot'
+    | '/password/reset'
     | '/t/team'
     | '/admin'
     | '/t'
@@ -157,6 +179,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/t'
     | '/invitations/accept'
+    | '/password/forgot'
+    | '/password/reset'
     | '/_authenticated/t/team'
     | '/_authenticated/admin/'
     | '/_authenticated/t/'
@@ -170,6 +194,8 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   StyleGuideRoute: typeof StyleGuideRoute
   InvitationsAcceptRoute: typeof InvitationsAcceptRoute
+  PasswordForgotRoute: typeof PasswordForgotRoute
+  PasswordResetRoute: typeof PasswordResetRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -235,6 +261,20 @@ declare module '@tanstack/react-router' {
       path: '/invitations/accept'
       fullPath: '/invitations/accept'
       preLoaderRoute: typeof InvitationsAcceptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/password/forgot': {
+      id: '/password/forgot'
+      path: '/password/forgot'
+      fullPath: '/password/forgot'
+      preLoaderRoute: typeof PasswordForgotRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/password/reset': {
+      id: '/password/reset'
+      path: '/password/reset'
+      fullPath: '/password/reset'
+      preLoaderRoute: typeof PasswordResetRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/': {
@@ -308,6 +348,8 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   StyleGuideRoute: StyleGuideRoute,
   InvitationsAcceptRoute: InvitationsAcceptRoute,
+  PasswordForgotRoute: PasswordForgotRoute,
+  PasswordResetRoute: PasswordResetRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

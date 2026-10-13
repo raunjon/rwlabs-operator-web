@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { config } from '@/config'
 import { ApiError } from '@/lib/api/errors'
 import { homePath } from '@/lib/session/session'
+import { PASSWORD_UPDATED_MESSAGE } from './password-reset'
 import { safeRedirect } from './redirect'
 import { signInErrorMessage, useSignIn } from './session-actions'
 
@@ -17,6 +18,7 @@ const loginRoute = getRouteApi('/login')
 export function LoginPage() {
   const { redirect: redirectTo, reason } = loginRoute.useSearch()
   const expired = reason === 'expired'
+  const passwordUpdated = reason === 'password-updated'
   const navigate = useNavigate()
   const signIn = useSignIn()
   const [email, setEmail] = useState('')
@@ -51,6 +53,11 @@ export function LoginPage() {
                 <AlertDescription>Your session has expired. Sign in again to continue.</AlertDescription>
               </Alert>
             )}
+            {passwordUpdated && !signIn.isError && (
+              <Alert variant="success">
+                <AlertDescription>{PASSWORD_UPDATED_MESSAGE}</AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-2">
               <Label htmlFor="login-email">Email</Label>
               <Input
@@ -66,9 +73,9 @@ export function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-baseline justify-between gap-2">
                 <Label htmlFor="login-password">Password</Label>
-                <a href="/forgot-password" className="text-sm text-link underline-offset-4 hover:underline">
+                <Link to="/password/forgot" className="text-sm text-link underline-offset-4 hover:underline">
                   Forgot password?
-                </a>
+                </Link>
               </div>
               <Input
                 id="login-password"
