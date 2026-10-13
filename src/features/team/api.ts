@@ -1,11 +1,14 @@
 import { requestWithSession } from '@/lib/api/client'
 import { ApiError } from '@/lib/api/errors'
-import type { components } from '@/lib/api/schema'
+import type { paths } from '@/lib/api/schema'
 import { parseTimestamp } from '@/lib/session/jwt'
 
-type GatewayInvitation = components['schemas']['Invitation']
+// What the create route answers with: the gateway's CreatedInvitation, the only schema that carries accept_token
+// (Invitation, used by index/resend/destroy, deliberately doesn't). Typed from the route rather than the schema
+// name, so the key names below are checked against whatever this route returns: a rename fails the typecheck.
+type GatewayInvitation =
+  paths['/auth/api/invitations']['post']['responses'][200]['content']['application/json']['data']
 
-// The key names are checked against the generated schema, so a rename in the gateway fails the typecheck.
 const EMAIL: keyof GatewayInvitation = 'email'
 const ROLE: keyof GatewayInvitation = 'role'
 const EXPIRES_AT: keyof GatewayInvitation = 'expires_at'

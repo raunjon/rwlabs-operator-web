@@ -867,6 +867,50 @@ export interface components {
             updated_at?: number;
             /** @description updated_at formatted for display in Asia/Kolkata time */
             updated_at_display?: string;
+        };
+        CreatedInvitation: {
+            id: number;
+            tenant_id?: number;
+            invited_by_id?: number;
+            accepted_user_id?: number;
+            email?: string;
+            /** @enum {string} */
+            role?: "admin" | "event_manager" | "lead_manager";
+            /**
+             * Format: int64
+             * @description Unix timestamp (seconds)
+             */
+            expires_at?: number;
+            /** @description expires_at formatted for display in Asia/Kolkata time */
+            expires_at_display?: string;
+            /**
+             * Format: int64
+             * @description Unix timestamp (seconds)
+             */
+            accepted_at?: number;
+            /** @description accepted_at formatted for display in Asia/Kolkata time */
+            accepted_at_display?: string;
+            /**
+             * Format: int64
+             * @description Unix timestamp (seconds)
+             */
+            revoked_at?: number;
+            /** @description revoked_at formatted for display in Asia/Kolkata time */
+            revoked_at_display?: string;
+            /**
+             * Format: int64
+             * @description Unix timestamp (seconds)
+             */
+            created_at?: number;
+            /** @description created_at formatted for display in Asia/Kolkata time */
+            created_at_display?: string;
+            /**
+             * Format: int64
+             * @description Unix timestamp (seconds)
+             */
+            updated_at?: number;
+            /** @description updated_at formatted for display in Asia/Kolkata time */
+            updated_at_display?: string;
             accept_token?: string;
         };
         Event: {
@@ -1588,7 +1632,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        data: components["schemas"]["Invitation"];
+                        data: components["schemas"]["CreatedInvitation"];
                     };
                 };
             };
