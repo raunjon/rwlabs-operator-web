@@ -46,7 +46,26 @@ async function invite(email: string, role?: string) {
   await send()
 }
 
-describe('inviting a team member from the tenant home page', () => {
+describe('finding the invite card', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+    loadSession()
+    startSession(makeJwt())
+  })
+
+  it('is on the Team page, reached from the sidebar, not on the home page', async () => {
+    const router = renderApp('/t')
+    expect(await screen.findByRole('heading', { name: /welcome/i })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Invite a team member' })).not.toBeInTheDocument()
+
+    await userEvent.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: 'Team' }))
+    expect(await card()).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Team' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/t/team')
+  })
+})
+
+describe('inviting a team member from the Team page', () => {
   beforeEach(() => {
     sessionStorage.clear()
     loadSession()
@@ -56,7 +75,7 @@ describe('inviting a team member from the tenant home page', () => {
 
   it('sends the invite and shows its accept link, built from the page’s origin', async () => {
     const bodies = createsInvitation()
-    renderApp('/t')
+    renderApp('/t/team')
     await invite('New@Example.com ', 'Event manager')
 
     const result = await screen.findByRole('status', { name: 'Invitation created' })
@@ -71,7 +90,7 @@ describe('inviting a team member from the tenant home page', () => {
 
   it('defaults the role to admin, the role that can use this panel', async () => {
     const bodies = createsInvitation()
-    renderApp('/t')
+    renderApp('/t/team')
     const region = within(await card())
     expect(region.getByLabelText('Role')).toHaveValue('admin')
     expect(region.getByLabelText('Role')).toHaveAccessibleDescription(/event and lead managers can’t use this panel yet/i)
@@ -83,7 +102,7 @@ describe('inviting a team member from the tenant home page', () => {
   it('copies the link and says so', async () => {
     createsInvitation()
     const user = userEvent.setup()
-    renderApp('/t')
+    renderApp('/t/team')
     await invite('a@example.com')
     await screen.findByRole('status', { name: 'Invitation created' })
 
@@ -97,7 +116,7 @@ describe('inviting a team member from the tenant home page', () => {
   it('says when the link couldn’t be copied, so it can be copied by hand', async () => {
     createsInvitation()
     const user = userEvent.setup()
-    renderApp('/t')
+    renderApp('/t/team')
     await invite('a@example.com')
     await screen.findByRole('status', { name: 'Invitation created' })
     vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'))
@@ -108,7 +127,7 @@ describe('inviting a team member from the tenant home page', () => {
 
   it('clears the form for the next invite and keeps the last link until that one is sent', async () => {
     createsInvitation()
-    renderApp('/t')
+    renderApp('/t/team')
     await invite('first@example.com', 'Lead manager')
     await screen.findByRole('status', { name: 'Invitation created' })
 
@@ -124,7 +143,7 @@ describe('inviting a team member from the tenant home page', () => {
 
   it('checks the email in the browser before sending', async () => {
     const bodies = createsInvitation()
-    renderApp('/t')
+    renderApp('/t/team')
     await invite('')
     expect(await screen.findByText('Enter their email')).toBeInTheDocument()
     await invite('not-an-email')
@@ -139,7 +158,7 @@ describe('inviting a team member from the tenant home page', () => {
     [422, 'Email is invalid'],
   ])('shows the server’s message for a %i and keeps what was typed', async (status, message) => {
     createAnswers(() => refused(status, message))
-    renderApp('/t')
+    renderApp('/t/team')
     await invite('taken@example.com', 'Lead manager')
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
     const region = within(await card())
@@ -150,7 +169,7 @@ describe('inviting a team member from the tenant home page', () => {
 
   it('says when the user isn’t allowed to invite', async () => {
     createAnswers(() => refused(403, 'You are not authorized to perform this action'))
-    renderApp('/t')
+    renderApp('/t/team')
     await invite('a@example.com')
     expect(await screen.findByRole('alert')).toHaveTextContent('You don’t have access to this')
   })
@@ -160,7 +179,7 @@ describe('inviting a team member from the tenant home page', () => {
     ['a proxy answers with an HTML error page', () => HttpResponse.html('<h1>502 Bad Gateway</h1>', { status: 502 })],
   ])('says the server is unreachable when %s', async (_, respond) => {
     createAnswers(respond)
-    renderApp('/t')
+    renderApp('/t/team')
     await invite('a@example.com')
     expect(await screen.findByRole('alert')).toHaveTextContent(UNREACHABLE_MESSAGE)
     expect(screen.queryByText(/502/)).not.toBeInTheDocument()
@@ -171,7 +190,7 @@ describe('inviting a team member from the tenant home page', () => {
       await delay('infinite')
       return HttpResponse.json({})
     })
-    renderApp('/t')
+    renderApp('/t/team')
     await invite('a@example.com')
     const region = within(await card())
     expect(region.getByRole('button', { name: 'Sending invite…' })).toBeDisabled()
@@ -181,7 +200,7 @@ describe('inviting a team member from the tenant home page', () => {
 
   it('ends the session when the gateway rejects the JWT', async () => {
     createAnswers(() => refused(401, 'Session expired, please login again'))
-    const router = renderApp('/t')
+    const router = renderApp('/t/team')
     await invite('a@example.com')
     await waitFor(() => expect(router.state.location.pathname).toBe('/login'))
     expect(currentSession()).toBeNull()
@@ -189,7 +208,7 @@ describe('inviting a team member from the tenant home page', () => {
 
   it('still confirms the invite when the server sends no link, and says the link is missing', async () => {
     createAnswers(({ email, role }) => HttpResponse.json({ data: invitation(email, role, ''), success: true }))
-    renderApp('/t')
+    renderApp('/t/team')
     await invite('a@example.com')
     const result = await screen.findByRole('status', { name: 'Invitation created' })
     expect(within(result).getByText('a@example.com')).toBeInTheDocument()

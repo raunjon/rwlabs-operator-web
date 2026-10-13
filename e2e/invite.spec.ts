@@ -31,6 +31,8 @@ test('an admin invites someone from the home page, sees the accept link and copi
   }))
 
   await page.goto('/t')
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Team' }).click()
+  await expect(page).toHaveURL(/\/t\/team$/)
   const card = page.getByRole('region', { name: 'Invite a team member' })
   await card.getByLabel('Email').fill('new@example.com')
   await card.getByLabel('Role').selectOption({ label: 'Lead manager' })
@@ -56,7 +58,7 @@ test('a duplicate email shows the server’s message', async ({ page }) => {
     json: { error: { message: 'Email already has a pending invitation', status: 409 }, success: false },
   }))
 
-  await page.goto('/t')
+  await page.goto('/t/team')
   const card = page.getByRole('region', { name: 'Invite a team member' })
   await card.getByLabel('Email').fill('taken@example.com')
   await card.getByRole('button', { name: 'Send invite' }).click()

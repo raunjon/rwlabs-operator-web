@@ -20,6 +20,7 @@ import { Route as AuthenticatedTRouteImport } from './routes/_authenticated/t'
 import { Route as InvitationsAcceptRouteImport } from './routes/invitations/accept'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedTIndexRouteImport } from './routes/_authenticated/t/index'
+import { Route as AuthenticatedTTeamRouteImport } from './routes/_authenticated/t/team'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -75,6 +76,11 @@ const AuthenticatedTIndexRoute = AuthenticatedTIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedTRoute,
 } as any)
+const AuthenticatedTTeamRoute = AuthenticatedTTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AuthenticatedTRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/t': typeof AuthenticatedTRouteWithChildren
   '/invitations/accept': typeof InvitationsAcceptRoute
+  '/t/team': typeof AuthenticatedTTeamRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/t/': typeof AuthenticatedTIndexRoute
 }
@@ -95,6 +102,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/style-guide': typeof StyleGuideRoute
   '/invitations/accept': typeof InvitationsAcceptRoute
+  '/t/team': typeof AuthenticatedTTeamRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/t': typeof AuthenticatedTIndexRoute
 }
@@ -109,6 +117,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/t': typeof AuthenticatedTRouteWithChildren
   '/invitations/accept': typeof InvitationsAcceptRoute
+  '/_authenticated/t/team': typeof AuthenticatedTTeamRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/t/': typeof AuthenticatedTIndexRoute
 }
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/t'
     | '/invitations/accept'
+    | '/t/team'
     | '/admin/'
     | '/t/'
   fileRoutesByTo: FileRoutesByTo
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/style-guide'
     | '/invitations/accept'
+    | '/t/team'
     | '/admin'
     | '/t'
   id:
@@ -146,6 +157,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/t'
     | '/invitations/accept'
+    | '/_authenticated/t/team'
     | '/_authenticated/admin/'
     | '/_authenticated/t/'
   fileRoutesById: FileRoutesById
@@ -239,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTIndexRouteImport
       parentRoute: typeof AuthenticatedTRoute
     }
+    '/_authenticated/t/team': {
+      id: '/_authenticated/t/team'
+      path: '/team'
+      fullPath: '/t/team'
+      preLoaderRoute: typeof AuthenticatedTTeamRouteImport
+      parentRoute: typeof AuthenticatedTRoute
+    }
   }
 }
 
@@ -254,10 +273,12 @@ const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
 interface AuthenticatedTRouteChildren {
+  AuthenticatedTTeamRoute: typeof AuthenticatedTTeamRoute
   AuthenticatedTIndexRoute: typeof AuthenticatedTIndexRoute
 }
 
 const AuthenticatedTRouteChildren: AuthenticatedTRouteChildren = {
+  AuthenticatedTTeamRoute: AuthenticatedTTeamRoute,
   AuthenticatedTIndexRoute: AuthenticatedTIndexRoute,
 }
 
