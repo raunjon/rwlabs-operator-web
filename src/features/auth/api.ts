@@ -1,4 +1,4 @@
-import { ApiError, toApiError } from '@/lib/api/errors'
+import { ApiError, NO_RESPONSE, toApiError } from '@/lib/api/errors'
 import { buildUrl } from '@/lib/api/url'
 import { deviceHeaders } from '@/lib/session/device'
 import { parseTimestamp } from '@/lib/session/jwt'
@@ -11,8 +11,8 @@ import { parseTimestamp } from '@/lib/session/jwt'
 export const SIGN_IN_TIMEOUT_MS = 15_000
 export const SIGN_OUT_TIMEOUT_MS = 5_000
 
-// status 0: the request never got an answer (offline, gateway down, timed out).
-export const NO_RESPONSE = 0
+// Re-exported for the auth pages, which branch on it.
+export { NO_RESPONSE }
 
 // A request made before there is a session. Resolves to the parsed body (null when it isn't JSON); rejects with
 // an ApiError carrying the server's message, or NO_RESPONSE.

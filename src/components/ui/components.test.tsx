@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from './alert'
 import { Badge } from './badge'
 import { Field } from './field'
 import { Input } from './input'
+import { NativeSelect } from './native-select'
 import { Label } from './label'
 import { Skeleton } from './skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table'
@@ -74,6 +75,22 @@ describe('form fields', () => {
       </>,
     )
     expect(screen.getByRole('textbox', { name: 'Notes' })).toBeDisabled()
+  })
+
+  it('renders a labelled native select with the field look', () => {
+    render(
+      <>
+        <Label htmlFor="role">Role</Label>
+        <NativeSelect id="role" defaultValue="b" aria-invalid>
+          <option value="a">A</option>
+          <option value="b">B</option>
+        </NativeSelect>
+      </>,
+    )
+    const select = screen.getByRole('combobox', { name: 'Role' })
+    expect(select).toHaveValue('b')
+    expect(select).toBeInvalid()
+    expect(select).toHaveClass('border-input', 'aria-invalid:border-destructive')
   })
 })
 

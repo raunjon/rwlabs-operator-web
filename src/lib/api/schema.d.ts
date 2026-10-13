@@ -27,7 +27,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["get_auth__api__skip"];
         put?: never;
         post: operations["post_auth__api__skip"];
         delete?: never;
@@ -867,6 +867,7 @@ export interface components {
             updated_at?: number;
             /** @description updated_at formatted for display in Asia/Kolkata time */
             updated_at_display?: string;
+            accept_token?: string;
         };
         Event: {
             id: number;
@@ -1122,6 +1123,28 @@ export interface components {
 export type $defs = Record<string, never>;
 export interface operations {
     post_auth__api__login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TokenDigest"];
+                    };
+                };
+            };
+        };
+    };
+    get_auth__api__skip: {
         parameters: {
             query?: never;
             header?: never;

@@ -1,4 +1,6 @@
+import type { ReactNode } from 'react'
 import { Card, CardDescription, CardHeader } from '@/components/ui/card'
+import { InviteCard } from '@/features/team/invite-card'
 import { useSession } from '@/lib/session/session'
 
 // Placeholder landing pages for the two areas until their features arrive (events, leads, tenants, ...).
@@ -8,7 +10,9 @@ export function TenantHome() {
     <HomePage
       title="Your organisation"
       description="Events, venues, leads and settings will appear in the sidebar as they're added."
-    />
+    >
+      <InviteCard />
+    </HomePage>
   )
 }
 
@@ -21,7 +25,7 @@ export function AdminHome() {
   )
 }
 
-function HomePage({ title, description }: { title: string; description: string }) {
+function HomePage({ title, description, children }: { title: string; description: string; children?: ReactNode }) {
   const session = useSession()
   return (
     <div className="max-w-3xl space-y-6">
@@ -35,6 +39,7 @@ function HomePage({ title, description }: { title: string; description: string }
           <CardDescription>{description}</CardDescription>
         </CardHeader>
       </Card>
+      {children}
     </div>
   )
 }
