@@ -34,6 +34,9 @@ environment, so focus on those, not style.
   can't carry the auth header.
 - **Errors become `ApiError` via `toApiError`.** Flag code that reads `response.json().error.message` by hand, or
   shows raw HTML error bodies (nginx/Vite proxy pages) to users.
+- **Session calls whose body the OpenAPI file doesn't describe** use `requestWithSession` (`src/lib/api/client.ts`),
+  which shares the `api` client's session rules. Flag a cast to force a body through the typed client, and a
+  session call made with a hand-rolled fetch.
 - **Calls made before there is a session** (login, signup, invitation lookup and accept) go through
   `requestWithoutSession` in `src/features/auth/api.ts`. Flag a new pre-session call made with the `api` client
   (it would attach a session token and end the session on 401) or with a hand-rolled fetch elsewhere. Logout is

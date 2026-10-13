@@ -149,6 +149,7 @@ tabbing through `/style-guide`.
 | `Card` | `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`, `CardContent`, `CardFooter`. `CardTitle` renders an `h3`; where the page needs another heading level, put your own heading in `CardHeader` |
 | `Table` | `TableHeader`, `TableBody`, `TableFooter`, `TableRow`, `TableHead`, `TableCell`, `TableCaption`. Body rows use `accent` on hover/selection; header rows don't |
 | `Input`, `Textarea`, `Label` | Form fields, bordered with `input`. Set `aria-invalid` for the error state; pair `Label` and field with `htmlFor`/`id` |
+| `NativeSelect` | The browser's `<select>` in the field look, for short fixed lists (the invite card's role). Same `aria-invalid` and labelling rules as `Input` |
 | `Field` | `Label` + one control + optional `hint` and `error` (muted and destructive text). Pass the control as the only child: `Field` sets its `id`, `aria-invalid` while there is an error, and `aria-describedby` for the error and hint |
 | `Skeleton` | Pulsing `muted` block for loading states; size it with `className`, and give the group `role="status"` with a label |
 

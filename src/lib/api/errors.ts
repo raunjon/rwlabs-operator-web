@@ -1,3 +1,6 @@
+// status 0: the request never got an answer (offline, gateway down, timed out).
+export const NO_RESPONSE = 0
+
 export class ApiError extends Error {
   readonly status: number
 

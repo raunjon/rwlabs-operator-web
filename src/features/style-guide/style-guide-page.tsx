@@ -9,6 +9,7 @@ import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { NativeSelect } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import { contrastRatio } from '@/lib/contrast'
 import { useResolvedTheme } from '@/lib/theme'
@@ -287,6 +288,12 @@ export function StyleGuidePage() {
           </Field>
           <Field id="sg-venue" label="Venue (disabled)">
             <Input defaultValue="The Loft" disabled />
+          </Field>
+          <Field id="sg-role" label="Role" hint="A native select in the field look">
+            <NativeSelect defaultValue="admin">
+              <option value="admin">Admin</option>
+              <option value="event_manager">Event manager</option>
+            </NativeSelect>
           </Field>
           <Field id="sg-notes" label="Notes">
             <Textarea placeholder="Anything the team should know" />

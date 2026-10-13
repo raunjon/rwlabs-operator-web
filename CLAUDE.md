@@ -66,7 +66,9 @@ Docker is staging/production only: don't build images locally.
 - **Session** (`src/lib/session/`): the gateway JWT is in `sessionStorage` (`session_jwt`) and the in-memory store
   only. Never copy it into React state, props, URLs or logs; `Session` deliberately has no token field, and only the
   API layer reads it via `sessionToken()`. Feature requests go through the `api` client, whose middleware adds
-  `X-Jwt-Token` and ends the session on a 401. Calls made before there is a session (login, signup, invitation
+  `X-Jwt-Token` and ends the session on a 401. When the gateway's OpenAPI doesn't describe a route's request body
+  (it describes none today, e.g. `POST /auth/api/invitations`), use `requestWithSession` in `src/lib/api/client.ts`
+  instead of casting: same two session rules, plus a timeout and `ApiError`/`NO_RESPONSE` failures. Calls made before there is a session (login, signup, invitation
   lookup and accept) go through `requestWithoutSession` in `src/features/auth/api.ts` with `fetch` + `buildUrl`:
   the gateway's OpenAPI doesn't describe their bodies or `?jwt=true`/`?token=`, and they must not end a session on
   401. Logout is the deliberate exception: `requestSignOut` runs after `endSession` has already cleared the local

@@ -9,7 +9,7 @@ import { useSession } from '@/lib/session/session'
 
 export interface NavItem {
   label: string
-  to: '/t' | '/admin'
+  to: '/t' | '/t/team' | '/admin'
 }
 
 // The frame around every signed-in page: sidebar with the area's navigation, the signed-in user and sign-out, and
