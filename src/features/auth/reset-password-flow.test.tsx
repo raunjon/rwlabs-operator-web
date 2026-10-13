@@ -62,6 +62,38 @@ describe('resetting a password', () => {
     expect(link).toHaveAttribute('href', '/password/forgot')
   })
 
+  it('remembers a token the server rejected: Back doesn’t show the form again for the same dead link', async () => {
+    const bodies = resetAnswers(() => envelope(404, 'Reset link is invalid or has expired'))
+    const router = renderApp('/password/reset?token=stale')
+    await fillAndSubmit()
+    await screen.findByRole('heading', { name: 'This reset link can’t be used' })
+    expect(bodies).toHaveLength(1)
+
+    // The user visits another page and comes back to the same reset link (e.g. via Back from /password/forgot).
+    await router.navigate({ to: '/password/forgot' })
+    await screen.findByRole('heading', { name: 'Reset your password' })
+    await router.navigate({ to: '/password/reset', search: { token: 'stale' } })
+
+    expect(await screen.findByRole('heading', { name: 'This reset link can’t be used' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('New password')).not.toBeInTheDocument()
+    // No second submission was offered or made.
+    expect(bodies).toHaveLength(1)
+  })
+
+  it('replaces the dead reset in history when "Request a new link" is clicked', async () => {
+    resetAnswers(() => envelope(404, 'Reset link is invalid or has expired'))
+    const router = renderApp('/password/reset?token=stale')
+    await fillAndSubmit()
+    await screen.findByRole('heading', { name: 'This reset link can’t be used' })
+
+    await userEvent.click(screen.getByRole('link', { name: 'Request a new link' }))
+    await screen.findByRole('heading', { name: 'Reset your password' })
+    expect(router.state.location.pathname).toBe('/password/forgot')
+    // The dead reset was replaced, so Back from here goes past it, not back to it.
+    router.history.back()
+    await waitFor(() => expect(router.state.location.pathname).not.toBe('/password/reset'))
+  })
+
   it('shows the invalid state straight away when the URL has no token', async () => {
     renderApp('/password/reset')
     expect(await screen.findByRole('heading', { name: 'This reset link can’t be used' })).toBeInTheDocument()

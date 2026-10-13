@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQueryClient } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { useForm } from 'react-hook-form'
 import { InternalLinks } from '@/components/internal-links'
@@ -9,7 +10,13 @@ import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { config } from '@/config'
 import { PASSWORD_MIN_LENGTH } from './form-rules'
-import { RESET_LINK_INVALID_MESSAGE, resetFailure, useResetPassword } from './password-reset'
+import {
+  isResetTokenInvalid,
+  markResetTokenInvalid,
+  RESET_LINK_INVALID_MESSAGE,
+  resetFailure,
+  useResetPassword,
+} from './password-reset'
 import { resetPasswordSchema, type ResetPasswordFields } from './reset-password-schema'
 
 const PASSWORD_HINT = `At least ${PASSWORD_MIN_LENGTH} characters`
@@ -43,6 +50,7 @@ export function ResetPasswordPage() {
 
 function ResetForm({ token }: { token: string }) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const reset = useResetPassword()
   const form = useForm<ResetPasswordFields>({
     resolver: zodResolver(resetPasswordSchema),
@@ -52,13 +60,17 @@ function ResetForm({ token }: { token: string }) {
   const busy = reset.isPending
   const failure = reset.isError ? resetFailure(reset.error) : null
 
-  if (failure?.kind === 'invalid') return <InvalidLink />
+  // A token the server has already rejected stays rejected: Back must not resurrect a usable form (AGENTS.md §4).
+  if (failure?.kind === 'invalid' || isResetTokenInvalid(queryClient, token)) return <InvalidLink />
 
   function submit({ password }: ResetPasswordFields) {
     reset.mutate(
       { token, password },
       {
         onSuccess: () => navigate({ to: '/login', search: { reason: 'password-updated' }, replace: true }),
+        onError: (error) => {
+          if (resetFailure(error).kind === 'invalid') markResetTokenInvalid(queryClient, token)
+        },
       },
     )
   }
@@ -111,7 +123,7 @@ function InvalidLink() {
           <AlertDescription>{RESET_LINK_INVALID_MESSAGE}</AlertDescription>
         </Alert>
         <Button asChild className="w-full">
-          <Link to="/password/forgot">Request a new link</Link>
+          <Link to="/password/forgot" replace>Request a new link</Link>
         </Button>
       </CardContent>
     </>

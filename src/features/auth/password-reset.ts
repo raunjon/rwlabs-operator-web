@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, type QueryClient } from '@tanstack/react-query'
 import { ApiError } from '@/lib/api/errors'
 import { NO_RESPONSE, requestForgotPassword, requestResetPassword, type PasswordReset } from './api'
 import { UNREACHABLE_MESSAGE } from './session-actions'
@@ -52,4 +52,18 @@ export function useForgotPassword() {
 
 export function useResetPassword() {
   return useMutation({ mutationFn: (reset: PasswordReset) => requestResetPassword(reset) })
+}
+
+// Remembers tokens the server has already rejected as invalid (used, unknown or expired), so that Back can't
+// resurrect a usable form for a dead link (AGENTS.md §4). The reset endpoint has no lookup query to invalidate the
+// way `useAcceptInvitation` does, so we piggyback on the QueryClient directly; the cache is per-test, which keeps
+// this out of test fixtures.
+const INVALID_TOKEN_KEY = ['password-reset-token-invalid'] as const
+
+export function markResetTokenInvalid(queryClient: QueryClient, token: string): void {
+  queryClient.setQueryData<true>([...INVALID_TOKEN_KEY, token], true)
+}
+
+export function isResetTokenInvalid(queryClient: QueryClient, token: string): boolean {
+  return queryClient.getQueryData<boolean>([...INVALID_TOKEN_KEY, token]) === true
 }
