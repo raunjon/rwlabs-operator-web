@@ -2,7 +2,16 @@ import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { ApiError } from '@/lib/api/errors'
 import { server } from '@/test/msw'
-import { NO_RESPONSE, requestAcceptInvitation, requestInvitationLookup, requestSignIn, requestSignOut, requestSignUp } from './api'
+import {
+  NO_RESPONSE,
+  requestAcceptInvitation,
+  requestForgotPassword,
+  requestInvitationLookup,
+  requestResetPassword,
+  requestSignIn,
+  requestSignOut,
+  requestSignUp,
+} from './api'
 
 describe('requestSignIn', () => {
   it('posts the credentials with the device headers and returns the JWT', async () => {
@@ -258,5 +267,84 @@ describe('requestAcceptInvitation', () => {
       ),
     )
     await expect(requestAcceptInvitation(acceptance)).rejects.toEqual(new ApiError(status, message))
+  })
+})
+
+describe('requestForgotPassword', () => {
+  it('posts the email without device headers or a session token', async () => {
+    let seen: { url: string; headers: Headers; body: unknown } | undefined
+    server.use(
+      http.post('*/auth/api/password/forgot', async ({ request }) => {
+        seen = { url: request.url, headers: request.headers, body: await request.json() }
+        return HttpResponse.json({ data: { message: 'ok' }, success: true })
+      }),
+    )
+
+    await expect(requestForgotPassword('ira@example.com')).resolves.toBeUndefined()
+    expect(new URL(seen!.url).pathname).toBe('/auth/api/password/forgot')
+    expect(seen!.body).toEqual({ email: 'ira@example.com' })
+    expect(seen!.headers.get('X-Jwt-Token')).toBeNull()
+    expect(seen!.headers.get('X-Device-Identifier')).toBeNull()
+  })
+
+  it('rejects with no status on a network error', async () => {
+    server.use(http.post('*/auth/api/password/forgot', () => HttpResponse.error()))
+    await expect(requestForgotPassword('a@b.c')).rejects.toMatchObject({ status: NO_RESPONSE })
+  })
+
+  it('rejects a server error with its message', async () => {
+    server.use(
+      http.post('*/auth/api/password/forgot', () =>
+        HttpResponse.json({ error: { message: 'Email required', status: 400 }, success: false }, { status: 400 }),
+      ),
+    )
+    await expect(requestForgotPassword('')).rejects.toEqual(new ApiError(400, 'Email required'))
+  })
+
+  it('gives up when the gateway never answers', async () => {
+    server.use(
+      http.post('*/auth/api/password/forgot', async () => {
+        await delay('infinite')
+        return HttpResponse.json({})
+      }),
+    )
+    await expect(requestForgotPassword('a@b.c', 50)).rejects.toMatchObject({ status: NO_RESPONSE })
+  })
+})
+
+describe('requestResetPassword', () => {
+  const reset = { token: 'abc', password: 'password123' }
+
+  it('posts the token and new password without device headers or a session token', async () => {
+    let seen: { url: string; headers: Headers; body: unknown } | undefined
+    server.use(
+      http.post('*/auth/api/password/reset', async ({ request }) => {
+        seen = { url: request.url, headers: request.headers, body: await request.json() }
+        return HttpResponse.json({ data: { message: 'Password updated' }, success: true })
+      }),
+    )
+
+    await expect(requestResetPassword(reset)).resolves.toBeUndefined()
+    expect(new URL(seen!.url).pathname).toBe('/auth/api/password/reset')
+    expect(seen!.body).toEqual({ token: 'abc', password: 'password123' })
+    expect(seen!.headers.get('X-Jwt-Token')).toBeNull()
+    expect(seen!.headers.get('X-Device-Identifier')).toBeNull()
+  })
+
+  it.each([
+    [404, 'Reset link is invalid or has expired'],
+    [422, 'Password is too short (minimum is 8 characters)'],
+  ])('rejects a %i with the server message', async (status, message) => {
+    server.use(
+      http.post('*/auth/api/password/reset', () =>
+        HttpResponse.json({ error: { message, status }, success: false }, { status }),
+      ),
+    )
+    await expect(requestResetPassword(reset)).rejects.toEqual(new ApiError(status, message))
+  })
+
+  it('rejects with no status on a network error', async () => {
+    server.use(http.post('*/auth/api/password/reset', () => HttpResponse.error()))
+    await expect(requestResetPassword(reset)).rejects.toMatchObject({ status: NO_RESPONSE })
   })
 })
