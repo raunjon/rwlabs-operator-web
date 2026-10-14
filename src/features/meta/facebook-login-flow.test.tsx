@@ -1,0 +1,302 @@
+import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { http, HttpResponse } from 'msw'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { loadSession, startSession } from '@/lib/session/session'
+import { makeJwt } from '@/test/jwt'
+import { server } from '@/test/msw'
+import { renderApp } from '@/test/render'
+import { FACEBOOK_CALLBACK_MESSAGE_TYPE, FACEBOOK_SESSION_EXPIRED_MESSAGE } from './facebook-login'
+import { META_UNREACHABLE_MESSAGE } from './meta-settings'
+
+// Reuses the OW-10 pages pattern: /meta_connection first (now with facebook_login_available), /meta_credentials
+// list, then the three Facebook endpoints. All mocked at the gateway path through MSW.
+
+const envelope = (status: number, message: string) =>
+  HttpResponse.json({ error: { message, status }, success: false }, { status })
+
+function mockConnection(facebookLoginAvailable: boolean) {
+  server.use(
+    http.get('*/operator/api/meta_connection', () =>
+      HttpResponse.json({
+        data: {
+          connected: true,
+          connected_at: '2026-05-01T10:00:00.000Z',
+          facebook_login_available: facebookLoginAvailable,
+        },
+        success: true,
+      }),
+    ),
+  )
+}
+
+function mockEmptyPages() {
+  server.use(http.get('*/operator/api/meta_credentials', () => HttpResponse.json({ data: [], success: true })))
+}
+
+function mockAuthorize(respond: () => Response | Promise<Response>) {
+  server.use(http.get('*/operator/api/facebook_login/authorize_url', () => respond()))
+}
+
+function mockFbPages(respond: (body: Record<string, unknown>) => Response | Promise<Response>) {
+  const bodies: Record<string, unknown>[] = []
+  server.use(
+    http.post('*/operator/api/facebook_login/pages', async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>
+      bodies.push(body)
+      return respond(body)
+    }),
+  )
+  return bodies
+}
+
+function mockFbCredentials(respond: (body: Record<string, unknown>) => Response | Promise<Response>) {
+  const bodies: Record<string, unknown>[] = []
+  server.use(
+    http.post('*/operator/api/facebook_login/credentials', async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>
+      bodies.push(body)
+      return respond(body)
+    }),
+  )
+  return bodies
+}
+
+// Fires the postMessage the Facebook OAuth callback page would send after Facebook redirects back. We stub
+// window.open so no real popup is attempted; this helper just dispatches the message directly as if the popup
+// had already sent it.
+function fireCallbackMessage(payload: { code: string | null; stateToken: string | null }) {
+  const event = new MessageEvent('message', {
+    origin: window.location.origin,
+    data: { type: FACEBOOK_CALLBACK_MESSAGE_TYPE, ...payload },
+  })
+  window.dispatchEvent(event)
+}
+
+const fakePopup = () => ({ close: vi.fn() }) as unknown as Window
+
+beforeEach(() => {
+  sessionStorage.clear()
+  loadSession()
+  startSession(makeJwt())
+})
+
+afterEach(() => vi.restoreAllMocks())
+
+describe('Log in with Facebook button visibility', () => {
+  it('is hidden when the server reports Facebook login isn’t configured', async () => {
+    mockConnection(false)
+    mockEmptyPages()
+    renderApp('/t/settings/meta')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Meta' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Log in with Facebook' })).not.toBeInTheDocument()
+    // The manual Add card from OW-10 stays visible as a fallback.
+    expect(await screen.findByRole('region', { name: 'Add a Facebook page' })).toBeInTheDocument()
+  })
+
+  it('is shown when the server reports Facebook login is configured', async () => {
+    mockConnection(true)
+    mockEmptyPages()
+    renderApp('/t/settings/meta')
+    expect(await screen.findByRole('region', { name: 'Log in with Facebook' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Log in with Facebook' })).toBeInTheDocument()
+  })
+})
+
+describe('Log in with Facebook flow', () => {
+  beforeEach(() => {
+    mockConnection(true)
+    mockEmptyPages()
+  })
+
+  async function startLogin() {
+    renderApp('/t/settings/meta')
+    const button = await screen.findByRole('button', { name: 'Log in with Facebook' })
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => fakePopup())
+    await userEvent.click(button)
+    await waitFor(() => expect(openSpy).toHaveBeenCalled())
+    return openSpy
+  }
+
+  it('opens Facebook in a popup with the authorize_url the server returned', async () => {
+    mockAuthorize(() =>
+      HttpResponse.json({
+        data: { authorize_url: 'https://www.facebook.com/v20.0/dialog/oauth?x=1', state_token: 'tok-123' },
+        success: true,
+      }),
+    )
+    const openSpy = await startLogin()
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://www.facebook.com/v20.0/dialog/oauth?x=1',
+      expect.any(String),
+      expect.stringContaining('width='),
+    )
+  })
+
+  it('exchanges the callback code for the Pages list and lets the admin pick one', async () => {
+    mockAuthorize(() =>
+      HttpResponse.json({
+        data: { authorize_url: 'https://fb.test/dialog', state_token: 'tok-123' },
+        success: true,
+      }),
+    )
+    const exchangeBodies = mockFbPages(() =>
+      HttpResponse.json({
+        data: {
+          session_id: 'sess_abc',
+          pages: [
+            { id: '12345', name: 'Main Page', access_token_present: true },
+            { id: '67890', name: 'No Token Page', access_token_present: false },
+          ],
+        },
+        success: true,
+      }),
+    )
+    let callCount = 0
+    server.use(
+      http.get('*/operator/api/meta_credentials', () => {
+        callCount += 1
+        if (callCount === 1) return HttpResponse.json({ data: [], success: true })
+        return HttpResponse.json({
+          data: [{ id: 7, label: 'Main Page', page_id: '12345', ad_account_id: null }],
+          success: true,
+        })
+      }),
+    )
+    const connectBodies = mockFbCredentials(() =>
+      HttpResponse.json({
+        data: { id: 7, label: 'Main Page', page_id: '12345', ad_account_id: null },
+        success: true,
+      }),
+    )
+
+    await startLogin()
+    fireCallbackMessage({ code: 'oauth-code', stateToken: 'tok-123' })
+
+    expect(await screen.findByText('Main Page')).toBeInTheDocument()
+    expect(screen.getByText('No Token Page')).toBeInTheDocument()
+    expect(exchangeBodies).toEqual([
+      { code: 'oauth-code', redirect_uri: `${window.location.origin}/meta/facebook/callback`, state_token: 'tok-123' },
+    ])
+
+    // The No-Token row's Connect button is disabled: the backend wouldn't give us a Page token for that one.
+    const connectButtons = screen.getAllByRole('button', { name: /^Connect this page$/ })
+    expect(connectButtons[0]).toBeEnabled()
+    expect(connectButtons[1]).toBeDisabled()
+
+    await userEvent.click(connectButtons[0])
+    await waitFor(() => expect(connectBodies).toHaveLength(1))
+    expect(connectBodies[0]).toEqual({ session_id: 'sess_abc', page_id: '12345', label: 'Main Page' })
+    expect(await screen.findByText('Connected Main Page.')).toBeInTheDocument()
+    // The pages list on the main card refetched; new page is there.
+    const metaPages = await screen.findAllByText('Facebook page 12345')
+    expect(metaPages.length).toBeGreaterThan(0)
+  })
+
+  it('ignores a callback message with a mismatched state token (postMessage security)', async () => {
+    mockAuthorize(() =>
+      HttpResponse.json({ data: { authorize_url: 'https://fb.test/dialog', state_token: 'tok-123' }, success: true }),
+    )
+    const exchangeBodies = mockFbPages(() => HttpResponse.json({ data: { session_id: 'x', pages: [] }, success: true }))
+
+    await startLogin()
+    fireCallbackMessage({ code: 'oauth-code', stateToken: 'ATTACKER' })
+
+    // Give any state updates a chance to flush; nothing should have changed.
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(exchangeBodies).toEqual([])
+  })
+
+  it('shows the cancelled copy when the callback returns without a code', async () => {
+    mockAuthorize(() =>
+      HttpResponse.json({ data: { authorize_url: 'https://fb.test/dialog', state_token: 'tok-123' }, success: true }),
+    )
+    await startLogin()
+    fireCallbackMessage({ code: null, stateToken: 'tok-123' })
+
+    expect(
+      await screen.findByText('Facebook login was cancelled, so nothing was connected.'),
+    ).toBeInTheDocument()
+    // Button is still available to try again.
+    expect(screen.getByRole('button', { name: 'Log in with Facebook' })).toBeEnabled()
+  })
+
+  it("shows Meta's rejection as the server message when it rejects the Page's token", async () => {
+    mockAuthorize(() =>
+      HttpResponse.json({ data: { authorize_url: 'https://fb.test/dialog', state_token: 'tok-123' }, success: true }),
+    )
+    mockFbPages(() =>
+      HttpResponse.json({
+        data: { session_id: 'sess_abc', pages: [{ id: '12345', name: 'Main', access_token_present: true }] },
+        success: true,
+      }),
+    )
+    mockFbCredentials(() => envelope(422, "Meta rejected this Page's access token as invalid or expired"))
+
+    await startLogin()
+    fireCallbackMessage({ code: 'oauth-code', stateToken: 'tok-123' })
+    await screen.findByText('Main')
+    await userEvent.click(screen.getByRole('button', { name: 'Connect this page' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Meta rejected this Page's access token as invalid or expired",
+    )
+    // Pages list stays so the admin can try another one or cancel.
+    expect(screen.getByText('Main')).toBeInTheDocument()
+  })
+
+  it('surfaces an expired session_id and lets the admin start over', async () => {
+    mockAuthorize(() =>
+      HttpResponse.json({ data: { authorize_url: 'https://fb.test/dialog', state_token: 'tok-123' }, success: true }),
+    )
+    mockFbPages(() =>
+      HttpResponse.json({
+        data: { session_id: 'sess_abc', pages: [{ id: '12345', name: 'Main', access_token_present: true }] },
+        success: true,
+      }),
+    )
+    mockFbCredentials(() => envelope(410, 'Your Facebook login has expired. Please log in again.'))
+
+    await startLogin()
+    fireCallbackMessage({ code: 'oauth-code', stateToken: 'tok-123' })
+    await screen.findByText('Main')
+    await userEvent.click(screen.getByRole('button', { name: 'Connect this page' }))
+
+    expect(await screen.findByText(FACEBOOK_SESSION_EXPIRED_MESSAGE)).toBeInTheDocument()
+    // Picker drops out; the admin sees the Log in with Facebook button again.
+    expect(await screen.findByRole('button', { name: 'Log in with Facebook' })).toBeInTheDocument()
+    expect(screen.queryByText('Main')).not.toBeInTheDocument()
+  })
+
+  it("shows Meta's unreachable copy when the Meta service is failing (502)", async () => {
+    mockAuthorize(() => envelope(502, 'Meta service is temporarily unavailable'))
+    vi.spyOn(window, 'open').mockImplementation(() => fakePopup())
+    renderApp('/t/settings/meta')
+    await userEvent.click(await screen.findByRole('button', { name: 'Log in with Facebook' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(META_UNREACHABLE_MESSAGE)
+    expect(window.open).not.toHaveBeenCalled()
+  })
+
+  it('shows the standard unreachable message on a gateway outage', async () => {
+    mockAuthorize(() => HttpResponse.error())
+    vi.spyOn(window, 'open').mockImplementation(() => fakePopup())
+    renderApp('/t/settings/meta')
+    await userEvent.click(await screen.findByRole('button', { name: 'Log in with Facebook' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent("Can't reach the server")
+    expect(window.open).not.toHaveBeenCalled()
+  })
+
+  it('shows a no-Pages message when the Facebook account manages none', async () => {
+    mockAuthorize(() =>
+      HttpResponse.json({ data: { authorize_url: 'https://fb.test/dialog', state_token: 'tok-123' }, success: true }),
+    )
+    mockFbPages(() => HttpResponse.json({ data: { session_id: 'sess_abc', pages: [] }, success: true }))
+
+    await startLogin()
+    fireCallbackMessage({ code: 'oauth-code', stateToken: 'tok-123' })
+
+    expect(
+      await screen.findByText("This Facebook account doesn’t manage any Pages, so there’s nothing to connect."),
+    ).toBeInTheDocument()
+  })
+})

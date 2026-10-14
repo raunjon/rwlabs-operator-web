@@ -8,7 +8,10 @@ import {
   fetchMetaConnection,
   fetchMetaPages,
   requestConnectToMeta,
+  requestCreateFacebookCredential,
   requestCreateMetaPage,
+  requestFacebookAuthorizeUrl,
+  requestFacebookPages,
   requestUpdateMetaPage,
 } from './api'
 
@@ -25,12 +28,16 @@ describe('fetchMetaConnection', () => {
   it('reads the connected state and timestamp from the envelope', async () => {
     server.use(
       http.get('*/operator/api/meta_connection', () =>
-        HttpResponse.json({ data: { connected: true, connected_at: '2026-05-01T10:00:00.000Z' }, success: true }),
+        HttpResponse.json({
+          data: { connected: true, connected_at: '2026-05-01T10:00:00.000Z', facebook_login_available: true },
+          success: true,
+        }),
       ),
     )
     await expect(fetchMetaConnection()).resolves.toEqual({
       connected: true,
       connectedAt: Date.UTC(2026, 4, 1, 10, 0, 0),
+      facebookLoginAvailable: true,
     })
   })
 
@@ -40,7 +47,25 @@ describe('fetchMetaConnection', () => {
         HttpResponse.json({ data: { connected: false }, success: true }),
       ),
     )
-    await expect(fetchMetaConnection()).resolves.toEqual({ connected: false, connectedAt: null })
+    await expect(fetchMetaConnection()).resolves.toEqual({
+      connected: false,
+      connectedAt: null,
+      facebookLoginAvailable: false,
+    })
+  })
+
+  it('defaults facebookLoginAvailable to false when the server omits it or sets it to false', async () => {
+    // OS-34's probe can be false (unconfigured) OR unknown (Meta service unreachable from the operator). Both
+    // collapse to `false` in the operator payload, and the panel treats both as "hide the button".
+    server.use(
+      http.get('*/operator/api/meta_connection', () =>
+        HttpResponse.json({
+          data: { connected: true, connected_at: '2026-05-01T10:00:00.000Z', facebook_login_available: false },
+          success: true,
+        }),
+      ),
+    )
+    await expect(fetchMetaConnection()).resolves.toMatchObject({ facebookLoginAvailable: false })
   })
 
   it('sends the session token on the GET', async () => {
@@ -185,5 +210,136 @@ describe('requestUpdateMetaPage', () => {
     )
     await requestUpdateMetaPage('11', { label: 'Renamed', adAccountId: null, pageAccessToken: 'tok_new' })
     expect(seen!.body).toEqual({ label: 'Renamed', ad_account_id: null, page_access_token: 'tok_new' })
+  })
+})
+
+describe('requestFacebookAuthorizeUrl', () => {
+  it('passes redirect_uri in the query and reads authorize_url + state_token from the envelope', async () => {
+    let seenUrl: string | undefined
+    server.use(
+      http.get('*/operator/api/facebook_login/authorize_url', ({ request }) => {
+        seenUrl = request.url
+        return HttpResponse.json({
+          data: { authorize_url: 'https://www.facebook.com/v20.0/dialog/oauth?x=1', state_token: 'signed.state' },
+          success: true,
+        })
+      }),
+    )
+    await expect(requestFacebookAuthorizeUrl('https://panel.example/meta/facebook/callback')).resolves.toEqual({
+      authorizeUrl: 'https://www.facebook.com/v20.0/dialog/oauth?x=1',
+      stateToken: 'signed.state',
+    })
+    expect(new URL(seenUrl!).searchParams.get('redirect_uri')).toBe('https://panel.example/meta/facebook/callback')
+  })
+
+  it('rejects a 503 "Facebook login isn’t configured" with the server message', async () => {
+    server.use(
+      http.get('*/operator/api/facebook_login/authorize_url', () => envelope(503, "Facebook login isn't configured")),
+    )
+    await expect(requestFacebookAuthorizeUrl('x')).rejects.toEqual(new ApiError(503, "Facebook login isn't configured"))
+  })
+})
+
+describe('requestFacebookPages', () => {
+  const input = { code: 'oauth-code', redirectUri: 'https://panel.example/meta/facebook/callback', stateToken: 'signed.state' }
+
+  it("posts the code + state_token + redirect_uri in the server's field names", async () => {
+    let seen: { body: unknown } | undefined
+    server.use(
+      http.post('*/operator/api/facebook_login/pages', async ({ request }) => {
+        seen = { body: await request.json() }
+        return HttpResponse.json({
+          data: {
+            session_id: 'sess_abc',
+            pages: [
+              { id: '12345', name: 'Main Page', access_token_present: true },
+              { id: '67890', name: 'Other Page', access_token_present: false },
+            ],
+          },
+          success: true,
+        })
+      }),
+    )
+
+    await expect(requestFacebookPages(input)).resolves.toEqual({
+      sessionId: 'sess_abc',
+      pages: [
+        { id: '12345', name: 'Main Page', accessTokenPresent: true },
+        { id: '67890', name: 'Other Page', accessTokenPresent: false },
+      ],
+    })
+    expect(seen!.body).toEqual({
+      code: 'oauth-code',
+      redirect_uri: 'https://panel.example/meta/facebook/callback',
+      state_token: 'signed.state',
+    })
+  })
+
+  it('accepts an empty pages list without failing', async () => {
+    server.use(
+      http.post('*/operator/api/facebook_login/pages', () =>
+        HttpResponse.json({ data: { session_id: 'sess_abc', pages: [] }, success: true }),
+      ),
+    )
+    await expect(requestFacebookPages(input)).resolves.toMatchObject({ sessionId: 'sess_abc', pages: [] })
+  })
+
+  it.each([
+    [410, 'Your Facebook login has expired. Please log in again.'],
+    [422, 'Facebook login could not be verified. Please try again.'],
+    [502, 'Meta service is temporarily unavailable'],
+  ])('rejects a %i with the server message', async (status, message) => {
+    server.use(http.post('*/operator/api/facebook_login/pages', () => envelope(status, message)))
+    await expect(requestFacebookPages(input)).rejects.toEqual(new ApiError(status, message))
+  })
+
+  it('rejects a success without a session_id (the only shape invariant the panel needs)', async () => {
+    server.use(http.post('*/operator/api/facebook_login/pages', () => HttpResponse.json({ data: { pages: [] }, success: true })))
+    await expect(requestFacebookPages(input)).rejects.toMatchObject({ status: 200 })
+  })
+})
+
+describe('requestCreateFacebookCredential', () => {
+  it('posts session_id + page_id and omits label/ad_account_id when not provided', async () => {
+    let seen: { body: unknown } | undefined
+    server.use(
+      http.post('*/operator/api/facebook_login/credentials', async ({ request }) => {
+        seen = { body: await request.json() }
+        return HttpResponse.json({
+          data: { id: 7, label: 'Main Page', page_id: '12345', ad_account_id: null },
+          success: true,
+        })
+      }),
+    )
+    await expect(
+      requestCreateFacebookCredential({ sessionId: 'sess_abc', pageId: '12345', label: null, adAccountId: null }),
+    ).resolves.toEqual({ id: '7', label: 'Main Page', pageId: '12345', adAccountId: null })
+    expect(seen!.body).toEqual({ session_id: 'sess_abc', page_id: '12345' })
+  })
+
+  it('sends the label when it is provided', async () => {
+    let seen: { body: unknown } | undefined
+    server.use(
+      http.post('*/operator/api/facebook_login/credentials', async ({ request }) => {
+        seen = { body: await request.json() }
+        return HttpResponse.json({
+          data: { id: 7, label: 'My Label', page_id: '12345', ad_account_id: null },
+          success: true,
+        })
+      }),
+    )
+    await requestCreateFacebookCredential({ sessionId: 'sess_abc', pageId: '12345', label: 'My Label', adAccountId: null })
+    expect(seen!.body).toEqual({ session_id: 'sess_abc', page_id: '12345', label: 'My Label' })
+  })
+
+  it.each([
+    [410, 'Your Facebook login has expired. Please log in again.'],
+    [422, "Meta rejected this Page's access token as invalid or expired"],
+    [502, 'Meta service is temporarily unavailable'],
+  ])('rejects a %i with the server message', async (status, message) => {
+    server.use(http.post('*/operator/api/facebook_login/credentials', () => envelope(status, message)))
+    await expect(
+      requestCreateFacebookCredential({ sessionId: 'sess_abc', pageId: '12345', label: null, adAccountId: null }),
+    ).rejects.toEqual(new ApiError(status, message))
   })
 })
