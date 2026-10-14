@@ -154,6 +154,23 @@ describe('connecting the organisation to Meta', () => {
     expect(await screen.findByRole('status', { name: 'Connected to Meta' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Connect to Meta' })).not.toBeInTheDocument()
   })
+
+  it('offers a Try again button when the connection query fails, and recovers on retry', async () => {
+    let callCount = 0
+    server.use(
+      http.get('*/operator/api/meta_connection', () => {
+        callCount += 1
+        if (callCount === 1) return envelope(502, 'Meta is unreachable')
+        return HttpResponse.json({ data: { connected: true, connected_at: '2026-05-01T10:00:00.000Z' }, success: true })
+      }),
+    )
+    mockPages(() => HttpResponse.json({ data: [], success: true }))
+    renderApp('/t/settings/meta')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(META_UNREACHABLE_MESSAGE)
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByRole('status', { name: 'Connected to Meta' })).toBeInTheDocument()
+  })
 })
 
 describe('listing Facebook pages', () => {

@@ -1,4 +1,5 @@
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query'
+import { useCallback, useRef } from 'react'
 import { NO_ACCESS_MESSAGE } from '@/features/team/invite'
 import { UNREACHABLE_MESSAGE } from '@/features/auth/session-actions'
 import { ApiError, NO_RESPONSE } from '@/lib/api/errors'
@@ -8,6 +9,7 @@ import {
   requestConnectToMeta,
   requestCreateMetaPage,
   requestUpdateMetaPage,
+  type MetaPage,
   type NewMetaPage,
   type UpdateMetaPage,
 } from './api'
@@ -70,26 +72,63 @@ export function useConnectToMeta() {
   })
 }
 
-// The create and update mutations never put the token into their state (useMutation's `variables` would otherwise
-// hold the submitted body around for the component to read): we strip it to '' inside mutationFn before anything
-// else looks at it, then send the real token in the API call itself. The caller passes the real token in via a
-// ref-like closure so React Query never sees it.
-type CreatePayload = NewMetaPage
-export function useCreateMetaPage() {
+// React Query stores whatever is passed to `mutate` on `mutation.variables` and keeps it there until the mutation
+// is reset — which would leave the typed page access token readable from mutation state (and React DevTools) long
+// after the form had cleared. Both hooks here keep the token in a hook-local ref, cleared on settle, and only ever
+// put the redacted body on React Query's state. Callers pass the full payload to `mutate` as usual.
+export type CreateVariables = Omit<NewMetaPage, 'pageAccessToken'>
+export type CreateMutation = Omit<UseMutationResult<MetaPage, Error, CreateVariables>, 'mutate'> & {
+  mutate: (page: NewMetaPage, options?: Parameters<UseMutationResult<MetaPage, Error, CreateVariables>['mutate']>[1]) => void
+}
+
+export function useCreateMetaPage(): CreateMutation {
   const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (page: CreatePayload) => {
-      const result = await requestCreateMetaPage(page)
-      return result
+  const tokenRef = useRef<string>('')
+  const mutation = useMutation({
+    mutationFn: (variables: CreateVariables) =>
+      requestCreateMetaPage({ ...variables, pageAccessToken: tokenRef.current }),
+    onSettled: () => {
+      tokenRef.current = ''
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: metaPagesQuery.queryKey }),
   })
+  const mutate: CreateMutation['mutate'] = useCallback(
+    (page: NewMetaPage, options) => {
+      tokenRef.current = page.pageAccessToken
+      const variables: CreateVariables = { label: page.label, pageId: page.pageId, adAccountId: page.adAccountId }
+      mutation.mutate(variables, options)
+    },
+    [mutation],
+  )
+  return { ...mutation, mutate }
 }
 
-export function useUpdateMetaPage() {
+export type UpdateVariables = { id: string; update: Omit<UpdateMetaPage, 'pageAccessToken'> }
+export type UpdateMutation = Omit<UseMutationResult<MetaPage, Error, UpdateVariables>, 'mutate'> & {
+  mutate: (
+    args: { id: string; update: UpdateMetaPage },
+    options?: Parameters<UseMutationResult<MetaPage, Error, UpdateVariables>['mutate']>[1],
+  ) => void
+}
+
+export function useUpdateMetaPage(): UpdateMutation {
   const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id, update }: { id: string; update: UpdateMetaPage }) => requestUpdateMetaPage(id, update),
+  const tokenRef = useRef<string | null>(null)
+  const mutation = useMutation({
+    mutationFn: ({ id, update }: UpdateVariables) =>
+      requestUpdateMetaPage(id, { ...update, pageAccessToken: tokenRef.current }),
+    onSettled: () => {
+      tokenRef.current = null
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: metaPagesQuery.queryKey }),
   })
+  const mutate: UpdateMutation['mutate'] = useCallback(
+    ({ id, update }: { id: string; update: UpdateMetaPage }, options) => {
+      tokenRef.current = update.pageAccessToken
+      const redacted: Omit<UpdateMetaPage, 'pageAccessToken'> = { label: update.label, adAccountId: update.adAccountId }
+      mutation.mutate({ id, update: redacted }, options)
+    },
+    [mutation],
+  )
+  return { ...mutation, mutate }
 }

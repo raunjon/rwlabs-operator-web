@@ -55,6 +55,8 @@ export function MetaSettingsPage() {
         connected={connection.data?.connected ?? false}
         connectedAt={connection.data?.connectedAt ?? null}
         error={connection.isError ? connection.error : null}
+        onRetry={() => void connection.refetch()}
+        isRetrying={connection.isFetching}
       />
 
       {connection.data?.connected && <PagesSection pagesQuery={pages} />}
@@ -67,11 +69,15 @@ function ConnectionCard({
   connected,
   connectedAt,
   error,
+  onRetry,
+  isRetrying,
 }: {
   isPending: boolean
   connected: boolean
   connectedAt: number | null
   error: unknown
+  onRetry: () => void
+  isRetrying: boolean
 }) {
   const connect = useConnectToMeta()
   const failure = connect.isError ? metaFailure(connect.error) : null
@@ -95,9 +101,14 @@ function ConnectionCard({
               <Skeleton className="h-4 w-1/3" />
             </div>
           ) : connectionError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{connectionError.message}</AlertDescription>
-            </Alert>
+            <>
+              <Alert variant="destructive">
+                <AlertDescription>{connectionError.message}</AlertDescription>
+              </Alert>
+              <Button type="button" variant="outline" onClick={onRetry} disabled={isRetrying}>
+                {isRetrying ? 'Trying again…' : 'Try again'}
+              </Button>
+            </>
           ) : connected ? (
             <div role="status" aria-label="Connected to Meta" className="space-y-1 text-sm">
               <p className="font-medium">Connected to Meta</p>
@@ -256,19 +267,18 @@ function AddPageCard() {
   const failure: MetaFailure | null = create.isError ? metaFailure(create.error) : null
 
   function submit(fields: AddMetaPageFields) {
-    const token = fields.pageAccessToken
+    // useCreateMetaPage strips the token off before it reaches React Query's mutation state (see its definition).
     create.mutate(
       {
         label: fields.label.trim(),
         pageId: fields.pageId.trim(),
-        pageAccessToken: token,
+        pageAccessToken: fields.pageAccessToken,
         adAccountId: fields.adAccountId.trim() || null,
       },
       {
         onSuccess: (page) => {
           setJustAdded(page.label)
-          // Reset to the stable defaults, which drops the typed token from form state. The outer api/queries
-          // layer never cached it either.
+          // Reset to the stable defaults, which drops the typed token from form state.
           form.reset(ADD_DEFAULTS)
         },
       },
@@ -341,14 +351,14 @@ function EditPageForm({ page, onDone }: { page: MetaPage; onDone: () => void }) 
   const failure: MetaFailure | null = update.isError ? metaFailure(update.error) : null
 
   function submit(fields: EditMetaPageFields) {
-    const token = fields.pageAccessToken
+    // useUpdateMetaPage strips the token off before it reaches React Query's mutation state (see its definition).
     update.mutate(
       {
         id: page.id,
         update: {
           label: fields.label.trim(),
           adAccountId: fields.adAccountId.trim() || null,
-          pageAccessToken: token ? token : null,
+          pageAccessToken: fields.pageAccessToken ? fields.pageAccessToken : null,
         },
       },
       { onSuccess: () => onDone() },
