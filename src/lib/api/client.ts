@@ -26,20 +26,24 @@ export const sessionMiddleware: Middleware = {
 
 export const REQUEST_TIMEOUT_MS = 15_000
 
-// A JSON request with the session, for gateway routes whose request body the OpenAPI file doesn't describe (the
-// typed client would need a cast to send one). Same session rules as `api`. Resolves to the parsed body (null when
-// it isn't JSON); rejects with an ApiError carrying the server's message, or NO_RESPONSE when no answer came.
+// A JSON request with the session, for gateway routes whose request or response body the OpenAPI file doesn't
+// describe (the typed client would need a cast to send one, and `data` would be `object`). Same session rules as
+// `api`. Resolves to the parsed body (null when it isn't JSON); rejects with an ApiError carrying the server's
+// message, or NO_RESPONSE when no answer came. GETs pass `null` as the body — no Content-Type is sent then.
 export async function requestWithSession(
-  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
   body: unknown,
   timeoutMs: number = REQUEST_TIMEOUT_MS,
 ): Promise<unknown> {
+  const hasBody = method !== 'GET' && body !== null
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  if (hasBody) headers['Content-Type'] = 'application/json'
   const request = withSession(
     new Request(buildUrl(path), {
       method,
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(body),
+      headers,
+      body: hasBody ? JSON.stringify(body) : undefined,
     }),
   )
   let response: Response

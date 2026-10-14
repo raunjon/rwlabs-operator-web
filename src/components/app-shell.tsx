@@ -9,12 +9,28 @@ import { useSession } from '@/lib/session/session'
 
 export interface NavItem {
   label: string
-  to: '/t' | '/t/team' | '/admin'
+  to: '/t' | '/t/team' | '/t/settings/meta' | '/admin'
+}
+
+export interface NavSection {
+  heading: string
+  items: NavItem[]
 }
 
 // The frame around every signed-in page: sidebar with the area's navigation, the signed-in user and sign-out, and
-// the main content. Used by both the tenant (/t) and super-admin (/admin) areas.
-export function AppShell({ area, nav, children }: { area: string; nav: NavItem[]; children: ReactNode }) {
+// the main content. Used by both the tenant (/t) and super-admin (/admin) areas. `nav` is the unlabelled top of
+// the sidebar; `sections` are rendered below it with a heading (e.g. "Settings → Meta").
+export function AppShell({
+  area,
+  nav,
+  sections = [],
+  children,
+}: {
+  area: string
+  nav: NavItem[]
+  sections?: NavSection[]
+  children: ReactNode
+}) {
   const session = useSession()
   const name = [session?.firstName, session?.lastName].filter(Boolean).join(' ') || session?.email
 
@@ -40,6 +56,24 @@ export function AppShell({ area, nav, children }: { area: string; nav: NavItem[]
             ))}
           </ul>
         </nav>
+        {sections.map((section) => (
+          <nav key={section.heading} aria-label={section.heading} className="space-y-1">
+            <p className="px-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">{section.heading}</p>
+            <ul className="space-y-1">
+              {section.items.map((item) => (
+                <li key={item.to}>
+                  <Link
+                    to={item.to}
+                    activeOptions={{ exact: true }}
+                    className="block rounded-sm px-2 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground data-[status=active]:bg-secondary data-[status=active]:text-secondary-foreground"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))}
         {config.showInternalPages && (
           <nav aria-label="Internal" className="space-y-1">
             <p className="px-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">Internal</p>

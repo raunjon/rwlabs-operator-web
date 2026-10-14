@@ -8,10 +8,14 @@ export const Route = createFileRoute('/_authenticated/t')({
     if (context.session.role !== 'admin') throw redirect({ to: homePath(context.session.role) })
   },
   component: () => (
-    <AppShell area="Organisation" nav={[
+    <AppShell
+      area="Organisation"
+      nav={[
         { label: 'Home', to: '/t' },
         { label: 'Team', to: '/t/team' },
-      ]}>
+      ]}
+      sections={[{ heading: 'Settings', items: [{ label: 'Meta', to: '/t/settings/meta' }] }]}
+    >
       <Outlet />
     </AppShell>
   ),
