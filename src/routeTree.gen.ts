@@ -23,6 +23,7 @@ import { Route as PasswordResetRouteImport } from './routes/password/reset'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedTIndexRouteImport } from './routes/_authenticated/t/index'
 import { Route as AuthenticatedTTeamRouteImport } from './routes/_authenticated/t/team'
+import { Route as AuthenticatedTSettingsMetaRouteImport } from './routes/_authenticated/t/settings/meta'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -93,6 +94,12 @@ const AuthenticatedTTeamRoute = AuthenticatedTTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AuthenticatedTRoute,
 } as any)
+const AuthenticatedTSettingsMetaRoute =
+  AuthenticatedTSettingsMetaRouteImport.update({
+    id: '/settings/meta',
+    path: '/settings/meta',
+    getParentRoute: () => AuthenticatedTRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/t/team': typeof AuthenticatedTTeamRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/t/': typeof AuthenticatedTIndexRoute
+  '/t/settings/meta': typeof AuthenticatedTSettingsMetaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -121,6 +129,7 @@ export interface FileRoutesByTo {
   '/t/team': typeof AuthenticatedTTeamRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/t': typeof AuthenticatedTIndexRoute
+  '/t/settings/meta': typeof AuthenticatedTSettingsMetaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -138,6 +147,7 @@ export interface FileRoutesById {
   '/_authenticated/t/team': typeof AuthenticatedTTeamRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/t/': typeof AuthenticatedTIndexRoute
+  '/_authenticated/t/settings/meta': typeof AuthenticatedTSettingsMetaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/t/team'
     | '/admin/'
     | '/t/'
+    | '/t/settings/meta'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/t/team'
     | '/admin'
     | '/t'
+    | '/t/settings/meta'
   id:
     | '__root__'
     | '/'
@@ -184,6 +196,7 @@ export interface FileRouteTypes {
     | '/_authenticated/t/team'
     | '/_authenticated/admin/'
     | '/_authenticated/t/'
+    | '/_authenticated/t/settings/meta'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -298,6 +311,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTTeamRouteImport
       parentRoute: typeof AuthenticatedTRoute
     }
+    '/_authenticated/t/settings/meta': {
+      id: '/_authenticated/t/settings/meta'
+      path: '/settings/meta'
+      fullPath: '/t/settings/meta'
+      preLoaderRoute: typeof AuthenticatedTSettingsMetaRouteImport
+      parentRoute: typeof AuthenticatedTRoute
+    }
   }
 }
 
@@ -315,11 +335,13 @@ const AuthenticatedAdminRouteWithChildren =
 interface AuthenticatedTRouteChildren {
   AuthenticatedTTeamRoute: typeof AuthenticatedTTeamRoute
   AuthenticatedTIndexRoute: typeof AuthenticatedTIndexRoute
+  AuthenticatedTSettingsMetaRoute: typeof AuthenticatedTSettingsMetaRoute
 }
 
 const AuthenticatedTRouteChildren: AuthenticatedTRouteChildren = {
   AuthenticatedTTeamRoute: AuthenticatedTTeamRoute,
   AuthenticatedTIndexRoute: AuthenticatedTIndexRoute,
+  AuthenticatedTSettingsMetaRoute: AuthenticatedTSettingsMetaRoute,
 }
 
 const AuthenticatedTRouteWithChildren = AuthenticatedTRoute._addFileChildren(
