@@ -90,9 +90,10 @@ function ConnectionCard({
         </CardHeader>
         <CardContent className="space-y-4">
           {isPending ? (
-            <p role="status" className="text-sm text-muted-foreground">
-              Checking connection…
-            </p>
+            <div role="status" aria-label="Checking Meta connection" className="space-y-2">
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-1/3" />
+            </div>
           ) : connectionError ? (
             <Alert variant="destructive">
               <AlertDescription>{connectionError.message}</AlertDescription>

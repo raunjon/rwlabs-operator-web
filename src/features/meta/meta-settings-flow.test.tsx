@@ -94,6 +94,15 @@ describe('connecting the organisation to Meta', () => {
     startSession(makeJwt())
   })
 
+  it('shows a labelled skeleton while the connection query is pending (AGENTS.md §4)', async () => {
+    mockConnection(async () => {
+      await delay('infinite')
+      return HttpResponse.json({ data: { connected: false }, success: true })
+    })
+    renderApp('/t/settings/meta')
+    expect(await screen.findByRole('status', { name: 'Checking Meta connection' })).toBeInTheDocument()
+  })
+
   it('shows the Connect button when the organisation isn’t connected yet, and provisions on click', async () => {
     // The connection query flips to "connected" after the POST invalidates it, so the mock has to answer the
     // refetch with the new state (same as the real server would).
