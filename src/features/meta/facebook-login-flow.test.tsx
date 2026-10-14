@@ -6,7 +6,11 @@ import { loadSession, startSession } from '@/lib/session/session'
 import { makeJwt } from '@/test/jwt'
 import { server } from '@/test/msw'
 import { renderApp } from '@/test/render'
-import { FACEBOOK_CALLBACK_MESSAGE_TYPE, FACEBOOK_SESSION_EXPIRED_MESSAGE } from './facebook-login'
+import {
+  FACEBOOK_CALLBACK_MESSAGE_TYPE,
+  FACEBOOK_POPUP_BLOCKED_MESSAGE,
+  FACEBOOK_SESSION_EXPIRED_MESSAGE,
+} from './facebook-login'
 import { META_UNREACHABLE_MESSAGE } from './meta-settings'
 
 // Reuses the OW-10 pages pattern: /meta_connection first (now with facebook_login_available), /meta_credentials
@@ -161,6 +165,31 @@ describe('Log in with Facebook flow', () => {
     const { popup } = await startLogin()
     await waitFor(() => expect(popup.close).toHaveBeenCalled())
     expect(await screen.findByRole('alert')).toHaveTextContent(META_UNREACHABLE_MESSAGE)
+  })
+
+  it('tells the admin the popup was blocked and skips the authorize request entirely', async () => {
+    // A popup blocker, an extension, or an embedded webview that refuses window.open returns null. The flow must
+    // detect this and show the popup-blocked message — otherwise the authorize request would succeed and mint a
+    // state_token with nowhere to be delivered, and the button would silently return to idle.
+    const authorizeCalls: string[] = []
+    server.use(
+      http.get('*/operator/api/facebook_login/authorize_url', ({ request }) => {
+        authorizeCalls.push(request.url)
+        return HttpResponse.json({
+          data: { authorize_url: 'https://fb.test/dialog', state_token: 'tok-123' },
+          success: true,
+        })
+      }),
+    )
+    renderApp('/t/settings/meta')
+    const button = await screen.findByRole('button', { name: 'Log in with Facebook' })
+    vi.spyOn(window, 'open').mockImplementation(() => null)
+    await userEvent.click(button)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(FACEBOOK_POPUP_BLOCKED_MESSAGE)
+    expect(authorizeCalls).toEqual([])
+    // Button stays enabled so a retry (after the admin allows popups) just works.
+    expect(screen.getByRole('button', { name: 'Log in with Facebook' })).toBeEnabled()
   })
 
   it('exchanges the callback code for the Pages list and lets the admin pick one', async () => {

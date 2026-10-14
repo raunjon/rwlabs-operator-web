@@ -53,7 +53,14 @@ export const FACEBOOK_NO_PAGES_MESSAGE =
 // also hides the button via `facebookLoginAvailable`.
 export const FACEBOOK_UNCONFIGURED_MESSAGE = 'Facebook login isn’t configured in this environment.'
 
+// Shown when the browser (popup blocker, an extension, or an embedded webview) refused the Facebook popup. The
+// authorize request is NOT made in this case — there's no window to send the admin to.
+export const FACEBOOK_POPUP_BLOCKED_MESSAGE =
+  'Your browser blocked the Facebook login popup. Allow popups for this site, then click Log in with Facebook again.'
+
 export type FacebookFailure =
+  // The browser refused window.open before any network call was made.
+  | { kind: 'popup-blocked'; message: string }
   // 410 or Meta-service "session has expired": go back to the button.
   | { kind: 'session-expired'; message: string }
   // 503 from authorize_url: the Meta service isn't configured for Facebook login at all.

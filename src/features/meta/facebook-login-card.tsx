@@ -7,6 +7,7 @@ import {
   FACEBOOK_CALLBACK_PATH,
   FACEBOOK_CANCELLED_MESSAGE,
   FACEBOOK_NO_PAGES_MESSAGE,
+  FACEBOOK_POPUP_BLOCKED_MESSAGE,
   facebookFailure,
   facebookRedirectUri,
   isFacebookCallbackMessage,
@@ -34,6 +35,7 @@ export function FacebookLoginCard() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [justConnected, setJustConnected] = useState<string | null>(null)
   const [cancelled, setCancelled] = useState(false)
+  const [popupBlocked, setPopupBlocked] = useState(false)
   // Pointer to the currently-open popup so we can detect a user who closed it without finishing.
   const popupRef = useRef<Window | null>(null)
   const redirectUri = facebookRedirectUri()
@@ -42,8 +44,9 @@ export function FacebookLoginCard() {
   const exchange = useFacebookPages()
   const connect = useCreateFacebookCredential()
 
-  const failure: FacebookFailure | null =
-    exchange.error && !exchange.isPending
+  const failure: FacebookFailure | null = popupBlocked
+    ? { kind: 'popup-blocked', message: FACEBOOK_POPUP_BLOCKED_MESSAGE }
+    : exchange.error && !exchange.isPending
       ? facebookFailure(exchange.error)
       : connect.error && !connect.isPending
         ? facebookFailure(connect.error)
@@ -59,6 +62,7 @@ export function FacebookLoginCard() {
     setPages(null)
     setSessionId(null)
     setCancelled(false)
+    setPopupBlocked(false)
     exchange.reset()
     connect.reset()
     authorize.reset()
@@ -67,6 +71,7 @@ export function FacebookLoginCard() {
   function startLogin() {
     setJustConnected(null)
     setCancelled(false)
+    setPopupBlocked(false)
     exchange.reset()
     connect.reset()
     // Open the popup synchronously inside the click handler. Browsers only allow window.open on a transient
@@ -74,14 +79,21 @@ export function FacebookLoginCard() {
     // and silently returns null in Safari and some Chromium configurations. Navigate the pre-opened window to the
     // real authorize URL once the authorize request resolves; close it if the request fails.
     const popup = window.open('about:blank', POPUP_NAME, POPUP_FEATURES)
+    if (!popup) {
+      // Popup blocker, extension, or embedded webview refused the window. Don't fire the authorize request —
+      // there's no window to send the admin to, and we'd otherwise mint a state_token with nowhere for it to be
+      // delivered. Explain and let the admin retry after allowing popups.
+      setPopupBlocked(true)
+      return
+    }
     popupRef.current = popup
     authorize.mutate(redirectUri, {
       onSuccess: ({ authorizeUrl, stateToken: token }) => {
         setStateToken(token)
-        if (popup && !popup.closed) popup.location.href = authorizeUrl
+        if (!popup.closed) popup.location.href = authorizeUrl
       },
       onError: () => {
-        if (popup && !popup.closed) popup.close()
+        if (!popup.closed) popup.close()
         popupRef.current = null
       },
     })
