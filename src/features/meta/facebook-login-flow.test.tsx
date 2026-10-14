@@ -73,7 +73,27 @@ function fireCallbackMessage(payload: { code: string | null; stateToken: string 
   window.dispatchEvent(event)
 }
 
-const fakePopup = () => ({ close: vi.fn() }) as unknown as Window
+// A stand-in for a real popup window, enough to let the component navigate it (`.location.href = …`), close it,
+// and read `.closed`. Each test uses a fresh instance so assertions on the href don't leak between tests.
+function fakePopup(): Window & { navigatedTo: string[]; close: ReturnType<typeof vi.fn>; closed: boolean } {
+  const navigatedTo: string[] = []
+  const popup = {
+    closed: false,
+    close: vi.fn(() => {
+      ;(popup as unknown as { closed: boolean }).closed = true
+    }),
+    navigatedTo,
+    location: {
+      get href() {
+        return navigatedTo.at(-1) ?? 'about:blank'
+      },
+      set href(value: string) {
+        navigatedTo.push(value)
+      },
+    },
+  }
+  return popup as unknown as Window & { navigatedTo: string[]; close: ReturnType<typeof vi.fn>; closed: boolean }
+}
 
 beforeEach(() => {
   sessionStorage.clear()
@@ -109,28 +129,38 @@ describe('Log in with Facebook flow', () => {
     mockEmptyPages()
   })
 
-  async function startLogin() {
+  async function startLogin(popup = fakePopup()) {
     renderApp('/t/settings/meta')
     const button = await screen.findByRole('button', { name: 'Log in with Facebook' })
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => fakePopup())
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => popup)
     await userEvent.click(button)
     await waitFor(() => expect(openSpy).toHaveBeenCalled())
-    return openSpy
+    return { openSpy, popup }
   }
 
-  it('opens Facebook in a popup with the authorize_url the server returned', async () => {
+  it('opens the popup synchronously as about:blank and only navigates it to the authorize URL once the request resolves', async () => {
+    // Browsers only honour window.open on the transient user-activation window of a click handler. The authorize
+    // fetch takes long enough (anything over Chrome's ~1 second activation ping, Safari's "any await at all") that
+    // calling window.open after an await is silently blocked. The flow must open about:blank synchronously and
+    // navigate it afterwards.
     mockAuthorize(() =>
       HttpResponse.json({
         data: { authorize_url: 'https://www.facebook.com/v20.0/dialog/oauth?x=1', state_token: 'tok-123' },
         success: true,
       }),
     )
-    const openSpy = await startLogin()
-    expect(openSpy).toHaveBeenCalledWith(
-      'https://www.facebook.com/v20.0/dialog/oauth?x=1',
-      expect.any(String),
-      expect.stringContaining('width='),
+    const { openSpy, popup } = await startLogin()
+    expect(openSpy).toHaveBeenCalledWith('about:blank', expect.any(String), expect.stringContaining('width='))
+    await waitFor(() =>
+      expect(popup.navigatedTo).toContain('https://www.facebook.com/v20.0/dialog/oauth?x=1'),
     )
+  })
+
+  it('closes the pre-opened popup when the authorize request fails, so the admin doesn’t stare at about:blank', async () => {
+    mockAuthorize(() => envelope(502, 'Meta service is temporarily unavailable'))
+    const { popup } = await startLogin()
+    await waitFor(() => expect(popup.close).toHaveBeenCalled())
+    expect(await screen.findByRole('alert')).toHaveTextContent(META_UNREACHABLE_MESSAGE)
   })
 
   it('exchanges the callback code for the Pages list and lets the admin pick one', async () => {
@@ -268,22 +298,18 @@ describe('Log in with Facebook flow', () => {
     expect(screen.queryByText('Main')).not.toBeInTheDocument()
   })
 
-  it("shows Meta's unreachable copy when the Meta service is failing (502)", async () => {
+  it("shows Meta's unreachable copy when the Meta service is failing (502) and closes the popup", async () => {
     mockAuthorize(() => envelope(502, 'Meta service is temporarily unavailable'))
-    vi.spyOn(window, 'open').mockImplementation(() => fakePopup())
-    renderApp('/t/settings/meta')
-    await userEvent.click(await screen.findByRole('button', { name: 'Log in with Facebook' }))
+    const { popup } = await startLogin()
     expect(await screen.findByRole('alert')).toHaveTextContent(META_UNREACHABLE_MESSAGE)
-    expect(window.open).not.toHaveBeenCalled()
+    await waitFor(() => expect(popup.close).toHaveBeenCalled())
   })
 
-  it('shows the standard unreachable message on a gateway outage', async () => {
+  it('shows the standard unreachable message on a gateway outage and closes the popup', async () => {
     mockAuthorize(() => HttpResponse.error())
-    vi.spyOn(window, 'open').mockImplementation(() => fakePopup())
-    renderApp('/t/settings/meta')
-    await userEvent.click(await screen.findByRole('button', { name: 'Log in with Facebook' }))
+    const { popup } = await startLogin()
     expect(await screen.findByRole('alert')).toHaveTextContent("Can't reach the server")
-    expect(window.open).not.toHaveBeenCalled()
+    await waitFor(() => expect(popup.close).toHaveBeenCalled())
   })
 
   it('shows a no-Pages message when the Facebook account manages none', async () => {

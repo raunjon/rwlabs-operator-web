@@ -1,5 +1,5 @@
 import { getRouteApi } from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { FACEBOOK_CALLBACK_MESSAGE_TYPE, type FacebookCallbackMessage } from './facebook-login'
 
 const route = getRouteApi('/meta/facebook/callback')
@@ -12,9 +12,18 @@ const route = getRouteApi('/meta/facebook/callback')
 export function FacebookCallbackPage() {
   const { code, state, error } = route.useSearch()
   const opener = typeof window !== 'undefined' ? window.opener : null
+  // The state_token is one-shot on the server: it's consumed by the opener's first POST /facebook_login/pages and
+  // a second attempt gets 410. React StrictMode in dev double-mounts, so without this guard the useEffect posts
+  // twice and the opener runs two exchanges, the second landing on 410 and overwriting the pages picker with the
+  // session-expired error. The ref survives the double-invoke because refs are stable across the strict-mode
+  // mount/unmount/remount cycle.
+  const postedRef = useRef(false)
 
   useEffect(() => {
     if (!opener) return
+    if (postedRef.current) return
+    postedRef.current = true
+
     const message: FacebookCallbackMessage = {
       type: FACEBOOK_CALLBACK_MESSAGE_TYPE,
       // Facebook returns `error=access_denied` (and sometimes no `code`) when the user cancels or denies

@@ -69,10 +69,20 @@ export function FacebookLoginCard() {
     setCancelled(false)
     exchange.reset()
     connect.reset()
+    // Open the popup synchronously inside the click handler. Browsers only allow window.open on a transient
+    // user-activation window; opening it after an awaited fetch (even one that resolves in <100ms) gets blocked
+    // and silently returns null in Safari and some Chromium configurations. Navigate the pre-opened window to the
+    // real authorize URL once the authorize request resolves; close it if the request fails.
+    const popup = window.open('about:blank', POPUP_NAME, POPUP_FEATURES)
+    popupRef.current = popup
     authorize.mutate(redirectUri, {
       onSuccess: ({ authorizeUrl, stateToken: token }) => {
         setStateToken(token)
-        popupRef.current = window.open(authorizeUrl, POPUP_NAME, POPUP_FEATURES)
+        if (popup && !popup.closed) popup.location.href = authorizeUrl
+      },
+      onError: () => {
+        if (popup && !popup.closed) popup.close()
+        popupRef.current = null
       },
     })
   }
