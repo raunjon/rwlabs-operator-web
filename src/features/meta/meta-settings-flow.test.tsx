@@ -215,6 +215,20 @@ describe('listing Facebook pages', () => {
     expect(await screen.findByText(CONNECT_FIRST_MESSAGE)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Connect to Meta' })).toBeInTheDocument()
   })
+
+  it('explains a failed fallback connect so the operator isn’t left guessing', async () => {
+    mockConnection(() =>
+      HttpResponse.json({ data: { connected: true, connected_at: '2026-05-01T10:00:00.000Z' }, success: true }),
+    )
+    mockPages(() => envelope(422, NOT_CONNECTED_SERVER_MESSAGE))
+    mockConnect(() => envelope(502, 'Meta service is temporarily unavailable'))
+    renderApp('/t/settings/meta')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Connect to Meta' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(META_UNREACHABLE_MESSAGE)
+    // The Connect button is re-enabled so the operator can retry.
+    expect(screen.getByRole('button', { name: 'Connect to Meta' })).toBeEnabled()
+  })
 })
 
 describe('adding a Facebook page', () => {

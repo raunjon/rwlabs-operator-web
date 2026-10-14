@@ -159,6 +159,7 @@ function PagesSection({ pagesQuery }: { pagesQuery: ReturnType<typeof useQuery<M
   }
 
   if (failure?.kind === 'not-connected') {
+    const connectFailure = connect.isError ? metaFailure(connect.error) : null
     return (
       <section aria-labelledby="meta-pages-heading">
         <Card>
@@ -171,6 +172,11 @@ function PagesSection({ pagesQuery }: { pagesQuery: ReturnType<typeof useQuery<M
             <Alert variant="info">
               <AlertDescription>{CONNECT_FIRST_MESSAGE}</AlertDescription>
             </Alert>
+            {connectFailure && (
+              <Alert variant="destructive">
+                <AlertDescription>{connectFailure.message}</AlertDescription>
+              </Alert>
+            )}
             <Button type="button" onClick={() => connect.mutate()} disabled={connect.isPending}>
               {connect.isPending ? 'Connecting…' : 'Connect to Meta'}
             </Button>
