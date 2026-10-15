@@ -69,11 +69,14 @@ export function FacebookLoginCard() {
   }
 
   function startLogin() {
+    // Clear every scrap of the previous attempt before firing a new one — in particular pages/sessionId/stateToken.
+    // Without this, a 410 that came out of the credential POST would leave the picker's state in place; dismissing
+    // the error (via connect.reset) would make the stale picker re-render and the admin could click a Connect
+    // button that targets the already-consumed session_id, producing another 410. reset() also clears the mutation
+    // errors we were separately resetting; call it first and then wipe the one piece of state it deliberately
+    // keeps (the last-connected label).
+    reset()
     setJustConnected(null)
-    setCancelled(false)
-    setPopupBlocked(false)
-    exchange.reset()
-    connect.reset()
     // Open the popup synchronously inside the click handler. Browsers only allow window.open on a transient
     // user-activation window; opening it after an awaited fetch (even one that resolves in <100ms) gets blocked
     // and silently returns null in Safari and some Chromium configurations. Navigate the pre-opened window to the

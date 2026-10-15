@@ -323,8 +323,18 @@ describe('Log in with Facebook flow', () => {
 
     expect(await screen.findByText(FACEBOOK_SESSION_EXPIRED_MESSAGE)).toBeInTheDocument()
     // Picker drops out; the admin sees the Log in with Facebook button again.
-    expect(await screen.findByRole('button', { name: 'Log in with Facebook' })).toBeInTheDocument()
+    const retryButton = await screen.findByRole('button', { name: 'Log in with Facebook' })
     expect(screen.queryByText('Main')).not.toBeInTheDocument()
+
+    // Clicking the retry button must NOT re-expose the stale picker. Without the state-clear fix in startLogin,
+    // resetting the mutation errors made showPages (pages !== null && !sessionExpired) flip back to true and the
+    // picker rendered a Connect button that would POST to the already-consumed session_id, producing another 410.
+    vi.spyOn(window, 'open').mockImplementation(() => fakePopup())
+    await userEvent.click(retryButton)
+    // The expired message is cleared and the stale page row stays gone.
+    expect(screen.queryByText(FACEBOOK_SESSION_EXPIRED_MESSAGE)).not.toBeInTheDocument()
+    expect(screen.queryByText('Main')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Connect this page' })).not.toBeInTheDocument()
   })
 
   it("shows Meta's unreachable copy when the Meta service is failing (502) and closes the popup", async () => {
