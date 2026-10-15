@@ -788,6 +788,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/operator/api/facebook_login/authorize_url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_operator__api__facebook_login__authorize_url"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/api/facebook_login/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_operator__api__facebook_login__pages"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/operator/api/facebook_login/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_operator__api__facebook_login__credentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/operator/api/meta_lead_forms/available": {
         parameters: {
             query?: never;
@@ -3251,6 +3299,106 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: Record<string, never>;
+                        success?: boolean;
+                    };
+                };
+            };
+        };
+    };
+    get_operator__api__facebook_login__authorize_url: {
+        parameters: {
+            query: {
+                redirect_uri: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uri */
+                            authorize_url?: string;
+                            state_token?: string;
+                        };
+                        success?: boolean;
+                    };
+                };
+            };
+        };
+    };
+    post_operator__api__facebook_login__pages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    code: string;
+                    /** Format: uri */
+                    redirect_uri: string;
+                    state_token: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            session_id?: string;
+                            pages?: {
+                                id?: string;
+                                name?: string;
+                                access_token_present?: boolean;
+                            }[];
+                        };
+                        success?: boolean;
+                    };
+                };
+            };
+        };
+    };
+    post_operator__api__facebook_login__credentials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    session_id: string;
+                    page_id: string;
+                    label?: string;
+                    ad_account_id?: string;
+                };
+            };
+        };
         responses: {
             /** @description Success */
             200: {

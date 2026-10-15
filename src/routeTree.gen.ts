@@ -23,6 +23,7 @@ import { Route as PasswordResetRouteImport } from './routes/password/reset'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedTIndexRouteImport } from './routes/_authenticated/t/index'
 import { Route as AuthenticatedTTeamRouteImport } from './routes/_authenticated/t/team'
+import { Route as MetaFacebookCallbackRouteImport } from './routes/meta/facebook.callback'
 import { Route as AuthenticatedTSettingsMetaRouteImport } from './routes/_authenticated/t/settings/meta'
 
 const IndexRoute = IndexRouteImport.update({
@@ -94,6 +95,11 @@ const AuthenticatedTTeamRoute = AuthenticatedTTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AuthenticatedTRoute,
 } as any)
+const MetaFacebookCallbackRoute = MetaFacebookCallbackRouteImport.update({
+  id: '/meta/facebook/callback',
+  path: '/meta/facebook/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedTSettingsMetaRoute =
   AuthenticatedTSettingsMetaRouteImport.update({
     id: '/settings/meta',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/password/forgot': typeof PasswordForgotRoute
   '/password/reset': typeof PasswordResetRoute
   '/t/team': typeof AuthenticatedTTeamRoute
+  '/meta/facebook/callback': typeof MetaFacebookCallbackRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/t/': typeof AuthenticatedTIndexRoute
   '/t/settings/meta': typeof AuthenticatedTSettingsMetaRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/password/forgot': typeof PasswordForgotRoute
   '/password/reset': typeof PasswordResetRoute
   '/t/team': typeof AuthenticatedTTeamRoute
+  '/meta/facebook/callback': typeof MetaFacebookCallbackRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/t': typeof AuthenticatedTIndexRoute
   '/t/settings/meta': typeof AuthenticatedTSettingsMetaRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/password/forgot': typeof PasswordForgotRoute
   '/password/reset': typeof PasswordResetRoute
   '/_authenticated/t/team': typeof AuthenticatedTTeamRoute
+  '/meta/facebook/callback': typeof MetaFacebookCallbackRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/t/': typeof AuthenticatedTIndexRoute
   '/_authenticated/t/settings/meta': typeof AuthenticatedTSettingsMetaRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/password/forgot'
     | '/password/reset'
     | '/t/team'
+    | '/meta/facebook/callback'
     | '/admin/'
     | '/t/'
     | '/t/settings/meta'
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/password/forgot'
     | '/password/reset'
     | '/t/team'
+    | '/meta/facebook/callback'
     | '/admin'
     | '/t'
     | '/t/settings/meta'
@@ -194,6 +205,7 @@ export interface FileRouteTypes {
     | '/password/forgot'
     | '/password/reset'
     | '/_authenticated/t/team'
+    | '/meta/facebook/callback'
     | '/_authenticated/admin/'
     | '/_authenticated/t/'
     | '/_authenticated/t/settings/meta'
@@ -209,6 +221,7 @@ export interface RootRouteChildren {
   InvitationsAcceptRoute: typeof InvitationsAcceptRoute
   PasswordForgotRoute: typeof PasswordForgotRoute
   PasswordResetRoute: typeof PasswordResetRoute
+  MetaFacebookCallbackRoute: typeof MetaFacebookCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -311,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTTeamRouteImport
       parentRoute: typeof AuthenticatedTRoute
     }
+    '/meta/facebook/callback': {
+      id: '/meta/facebook/callback'
+      path: '/meta/facebook/callback'
+      fullPath: '/meta/facebook/callback'
+      preLoaderRoute: typeof MetaFacebookCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/t/settings/meta': {
       id: '/_authenticated/t/settings/meta'
       path: '/settings/meta'
@@ -372,6 +392,7 @@ const rootRouteChildren: RootRouteChildren = {
   InvitationsAcceptRoute: InvitationsAcceptRoute,
   PasswordForgotRoute: PasswordForgotRoute,
   PasswordResetRoute: PasswordResetRoute,
+  MetaFacebookCallbackRoute: MetaFacebookCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

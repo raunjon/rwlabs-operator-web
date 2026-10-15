@@ -9,6 +9,7 @@ import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { MetaPage } from './api'
+import { FacebookLoginCard } from './facebook-login-card'
 import {
   CONNECT_FIRST_MESSAGE,
   metaConnectionQuery,
@@ -59,7 +60,12 @@ export function MetaSettingsPage() {
         isRetrying={connection.isFetching}
       />
 
-      {connection.data?.connected && <PagesSection pagesQuery={pages} />}
+      {connection.data?.connected && (
+        <PagesSection
+          pagesQuery={pages}
+          facebookLoginAvailable={connection.data.facebookLoginAvailable}
+        />
+      )}
     </div>
   )
 }
@@ -134,7 +140,13 @@ function ConnectionCard({
   )
 }
 
-function PagesSection({ pagesQuery }: { pagesQuery: ReturnType<typeof useQuery<MetaPage[]>> }) {
+function PagesSection({
+  pagesQuery,
+  facebookLoginAvailable,
+}: {
+  pagesQuery: ReturnType<typeof useQuery<MetaPage[]>>
+  facebookLoginAvailable: boolean
+}) {
   const failure = pagesQuery.isError ? metaFailure(pagesQuery.error) : null
   const connect = useConnectToMeta()
 
@@ -236,6 +248,7 @@ function PagesSection({ pagesQuery }: { pagesQuery: ReturnType<typeof useQuery<M
           </CardContent>
         </Card>
       </section>
+      {facebookLoginAvailable && <FacebookLoginCard />}
       <AddPageCard />
     </>
   )
