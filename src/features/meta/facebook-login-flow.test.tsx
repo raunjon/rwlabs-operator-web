@@ -167,6 +167,42 @@ describe('Log in with Facebook flow', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(META_UNREACHABLE_MESSAGE)
   })
 
+  it('scopes the pending button text to the row that was clicked, not every row', async () => {
+    mockAuthorize(() =>
+      HttpResponse.json({ data: { authorize_url: 'https://fb.test/dialog', state_token: 'tok-123' }, success: true }),
+    )
+    mockFbPages(() =>
+      HttpResponse.json({
+        data: {
+          session_id: 'sess_abc',
+          pages: [
+            { id: '12345', name: 'Main Page', access_token_present: true },
+            { id: '67890', name: 'Other Page', access_token_present: true },
+          ],
+        },
+        success: true,
+      }),
+    )
+    // Keep the credential request pending so the test observes the intermediate "Connecting …" copy.
+    mockFbCredentials(
+      () =>
+        new Promise<Response>(() => {
+          /* never resolves */
+        }),
+    )
+
+    await startLogin()
+    fireCallbackMessage({ code: 'oauth-code', stateToken: 'tok-123' })
+    await screen.findByRole('button', { name: 'Connect Main Page' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Connect Main Page' }))
+
+    // Only the clicked row flips its label to the pending copy; the other stays on the idle label (but is disabled
+    // too, so the admin can't double-submit).
+    expect(await screen.findByRole('button', { name: 'Connecting Main Page…' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Connect Other Page' })).toBeDisabled()
+  })
+
   it('tells the admin the popup was blocked and skips the authorize request entirely', async () => {
     // A popup blocker, an extension, or an embedded webview that refuses window.open returns null. The flow must
     // detect this and show the popup-blocked message — otherwise the authorize request would succeed and mint a
@@ -238,12 +274,12 @@ describe('Log in with Facebook flow', () => {
       { code: 'oauth-code', redirect_uri: `${window.location.origin}/meta/facebook/callback`, state_token: 'tok-123' },
     ])
 
-    // The No-Token row's Connect button is disabled: the backend wouldn't give us a Page token for that one.
-    const connectButtons = screen.getAllByRole('button', { name: /^Connect this page$/ })
-    expect(connectButtons[0]).toBeEnabled()
-    expect(connectButtons[1]).toBeDisabled()
+    // Each button names the Page it will connect, so a screen-reader user navigating by controls can tell them
+    // apart. The No-Token row's Connect button is disabled: the backend wouldn't give us a Page token for that one.
+    expect(screen.getByRole('button', { name: 'Connect Main Page' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Connect No Token Page' })).toBeDisabled()
 
-    await userEvent.click(connectButtons[0])
+    await userEvent.click(screen.getByRole('button', { name: 'Connect Main Page' }))
     await waitFor(() => expect(connectBodies).toHaveLength(1))
     expect(connectBodies[0]).toEqual({ session_id: 'sess_abc', page_id: '12345', label: 'Main Page' })
     expect(await screen.findByText('Connected Main Page.')).toBeInTheDocument()
@@ -295,7 +331,7 @@ describe('Log in with Facebook flow', () => {
     await startLogin()
     fireCallbackMessage({ code: 'oauth-code', stateToken: 'tok-123' })
     await screen.findByText('Main')
-    await userEvent.click(screen.getByRole('button', { name: 'Connect this page' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Connect Main' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       "Meta rejected this Page's access token as invalid or expired",
@@ -319,7 +355,7 @@ describe('Log in with Facebook flow', () => {
     await startLogin()
     fireCallbackMessage({ code: 'oauth-code', stateToken: 'tok-123' })
     await screen.findByText('Main')
-    await userEvent.click(screen.getByRole('button', { name: 'Connect this page' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Connect Main' }))
 
     expect(await screen.findByText(FACEBOOK_SESSION_EXPIRED_MESSAGE)).toBeInTheDocument()
     // Picker drops out; the admin sees the Log in with Facebook button again.
@@ -334,7 +370,7 @@ describe('Log in with Facebook flow', () => {
     // The expired message is cleared and the stale page row stays gone.
     expect(screen.queryByText(FACEBOOK_SESSION_EXPIRED_MESSAGE)).not.toBeInTheDocument()
     expect(screen.queryByText('Main')).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Connect this page' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Connect Main' })).not.toBeInTheDocument()
   })
 
   it("shows Meta's unreachable copy when the Meta service is failing (502) and closes the popup", async () => {

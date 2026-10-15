@@ -198,28 +198,40 @@ export function FacebookLoginCard() {
             </>
           ) : (
             <ul className="divide-y divide-border">
-              {pages.map((page) => (
-                <li key={page.id} className="flex items-start justify-between gap-4 py-3">
-                  <div className="space-y-1 text-sm">
-                    <p className="font-medium">{page.name}</p>
-                    <p className="text-muted-foreground">Facebook page {page.id}</p>
-                    {!page.accessTokenPresent && (
-                      <p className="text-muted-foreground">
-                        No access token available for this Page. Facebook may not have granted the required
-                        permissions.
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => pick(page)}
-                    disabled={connecting || !page.accessTokenPresent}
-                  >
-                    {connecting ? 'Connecting…' : 'Connect this page'}
-                  </Button>
-                </li>
-              ))}
+              {pages.map((page) => {
+                // Pending state is per-page, not per-card: only the button whose pick() call is in flight shows
+                // the pending copy; the others stay enabled-ish but still disabled to prevent double-submits.
+                // connect.variables carries the submitted body during pending (React Query exposes it on the
+                // mutation state), so pageId === page.id tells us this is the active row.
+                const isConnectingThis = connecting && connect.variables?.pageId === page.id
+                // Give each button an accessible name that includes the Page it will connect, so a screen-reader
+                // user navigating by controls hears "Connect Main Page" instead of five identical "Connect this
+                // page" buttons. The visible text and the accessible name are the same string to avoid the "label
+                // in name" trap.
+                const label = isConnectingThis ? `Connecting ${page.name}…` : `Connect ${page.name}`
+                return (
+                  <li key={page.id} className="flex items-start justify-between gap-4 py-3">
+                    <div className="space-y-1 text-sm">
+                      <p className="font-medium">{page.name}</p>
+                      <p className="text-muted-foreground">Facebook page {page.id}</p>
+                      {!page.accessTokenPresent && (
+                        <p className="text-muted-foreground">
+                          No access token available for this Page. Facebook may not have granted the required
+                          permissions.
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => pick(page)}
+                      disabled={connecting || !page.accessTokenPresent}
+                    >
+                      {label}
+                    </Button>
+                  </li>
+                )
+              })}
             </ul>
           )}
           {showPages && !noPages && (
