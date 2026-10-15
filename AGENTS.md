@@ -2,7 +2,7 @@
 
 This file tells code-review agents what to look for in `rwlabs_operator_web`. Read `CLAUDE.md` first for the stack,
 commands and the non-obvious rules, and the design spec (`docs/superpowers/specs/2026-10-12-operator-web-v1-design.md`)
-for what the panel must do. The backend it talks to has its own guide: `../thirtyplus_gateway/AGENTS.md`.
+for what the panel must do. The backend it talks to has its own guide: `../rwlabs_gateway/AGENTS.md`.
 
 The panel is a static SPA that talks only to the gateway. It holds no data of its own, but it holds the user's
 session token, decides what an operator sees, and is the first thing organisers outside ThirtyPlus will use. A bug

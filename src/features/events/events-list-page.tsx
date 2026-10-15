@@ -55,6 +55,20 @@ export function EventsListPage({ area, search }: { area: EventsArea; search: Eve
 
       <Filters area={area} search={search} venues={venues.data ?? []} />
 
+      {venues.isError && (
+        // The events still list without venues; only their names and the venue filter are missing.
+        <div className="space-y-3">
+          <Alert variant="destructive">
+            <AlertDescription>
+              Venue names and the venue filter aren’t available. {eventFailure(venues.error).message}
+            </AlertDescription>
+          </Alert>
+          <Button type="button" variant="outline" size="sm" onClick={() => void venues.refetch()} disabled={venues.isFetching}>
+            {venues.isFetching ? 'Reloading venues…' : 'Reload venues'}
+          </Button>
+        </div>
+      )}
+
       {events.isPending ? (
         <div role="status" aria-label="Loading events" className="space-y-3">
           <Skeleton className="h-10 w-full" />

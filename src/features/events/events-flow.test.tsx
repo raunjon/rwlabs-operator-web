@@ -152,6 +152,25 @@ describe('the events list', () => {
     expect(await screen.findByRole('link', { name: 'Friday Rooftop Mixer' })).toBeInTheDocument()
   })
 
+  it('a failed venues lookup says so, with a retry, while the events still show', async () => {
+    let venuesFail = true
+    server.use(
+      http.get('*/operator/api/venues', () =>
+        venuesFail ? HttpResponse.error() : HttpResponse.json({ data: VENUES, success: true }),
+      ),
+    )
+    mockList(() => onePage([gatewayEvent()]))
+    renderApp('/t/events')
+    expect(await screen.findByRole('link', { name: 'Friday Rooftop Mixer' })).toBeInTheDocument()
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Venue names and the venue filter aren’t available.')
+    expect(alert).toHaveTextContent(UNREACHABLE_MESSAGE)
+    venuesFail = false
+    await userEvent.click(screen.getByRole('button', { name: 'Reload venues' }))
+    expect(await screen.findByText('Skyline Rooftop', { selector: 'td' })).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
   it('search and venue filters live in the URL and go to the server; Clear filters drops them', async () => {
     const urls = mockList(() => onePage([gatewayEvent()]))
     const router = renderApp('/t/events')
