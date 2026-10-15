@@ -12,6 +12,7 @@ export const Route = createFileRoute('/_authenticated/t')({
       area="Organisation"
       nav={[
         { label: 'Home', to: '/t' },
+        { label: 'Events', to: '/t/events' },
         { label: 'Team', to: '/t/team' },
       ]}
       sections={[{ heading: 'Settings', items: [{ label: 'Meta', to: '/t/settings/meta' }] }]}
