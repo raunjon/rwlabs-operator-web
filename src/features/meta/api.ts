@@ -157,10 +157,12 @@ export interface FacebookPage {
   id: string
   // Page name as the admin sees it on Facebook.
   name: string
-  // The server's hint about whether a Page access token is available for this page (false means the admin's
-  // Facebook user doesn't manage this page with the needed role).
-  accessTokenPresent: boolean
 }
+
+// The Meta service's `/me/accounts` call only returns pages the admin manages at a role level, so every entry
+// here is a candidate to connect. The Page access token is fetched server-side at the credentials step; if Meta
+// refuses to grant it (role too weak, permission declined), the server returns 422 which the UI surfaces via
+// `facebookFailure`.
 
 export interface FacebookPagesResult {
   // Opaque one-shot id for the follow-up POST credentials. Expires after a short TTL (10 min) and is destroyed on
@@ -173,7 +175,6 @@ function readFacebookPage(data: Record<string, unknown>): FacebookPage {
   return {
     id: text(data.id),
     name: text(data.name),
-    accessTokenPresent: data.access_token_present === true,
   }
 }
 

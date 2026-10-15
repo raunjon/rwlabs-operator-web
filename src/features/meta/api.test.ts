@@ -252,8 +252,8 @@ describe('requestFacebookPages', () => {
           data: {
             session_id: 'sess_abc',
             pages: [
-              { id: '12345', name: 'Main Page', access_token_present: true },
-              { id: '67890', name: 'Other Page', access_token_present: false },
+              { id: '12345', name: 'Main Page' },
+              { id: '67890', name: 'Other Page' },
             ],
           },
           success: true,
@@ -264,8 +264,8 @@ describe('requestFacebookPages', () => {
     await expect(requestFacebookPages(input)).resolves.toEqual({
       sessionId: 'sess_abc',
       pages: [
-        { id: '12345', name: 'Main Page', accessTokenPresent: true },
-        { id: '67890', name: 'Other Page', accessTokenPresent: false },
+        { id: '12345', name: 'Main Page' },
+        { id: '67890', name: 'Other Page' },
       ],
     })
     expect(seen!.body).toEqual({

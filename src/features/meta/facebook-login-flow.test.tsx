@@ -176,8 +176,8 @@ describe('Log in with Facebook flow', () => {
         data: {
           session_id: 'sess_abc',
           pages: [
-            { id: '12345', name: 'Main Page', access_token_present: true },
-            { id: '67890', name: 'Other Page', access_token_present: true },
+            { id: '12345', name: 'Main Page' },
+            { id: '67890', name: 'Other Page' },
           ],
         },
         success: true,
@@ -239,9 +239,12 @@ describe('Log in with Facebook flow', () => {
       HttpResponse.json({
         data: {
           session_id: 'sess_abc',
+          // The Meta service only returns `{id, name}` for each page it lists (the Page access token is fetched
+          // server-side at the credentials step). This fixture mirrors that real shape so the panel can't quietly
+          // start depending on a field the server never sends.
           pages: [
-            { id: '12345', name: 'Main Page', access_token_present: true },
-            { id: '67890', name: 'No Token Page', access_token_present: false },
+            { id: '12345', name: 'Main Page' },
+            { id: '67890', name: 'Other Page' },
           ],
         },
         success: true,
@@ -269,15 +272,18 @@ describe('Log in with Facebook flow', () => {
     fireCallbackMessage({ code: 'oauth-code', stateToken: 'tok-123' })
 
     expect(await screen.findByText('Main Page')).toBeInTheDocument()
-    expect(screen.getByText('No Token Page')).toBeInTheDocument()
+    expect(screen.getByText('Other Page')).toBeInTheDocument()
     expect(exchangeBodies).toEqual([
       { code: 'oauth-code', redirect_uri: `${window.location.origin}/meta/facebook/callback`, state_token: 'tok-123' },
     ])
 
     // Each button names the Page it will connect, so a screen-reader user navigating by controls can tell them
-    // apart. The No-Token row's Connect button is disabled: the backend wouldn't give us a Page token for that one.
+    // apart. Both are enabled: the server already filtered `/me/accounts` to pages the admin manages, and the
+    // credentials step handles a late Meta rejection via the 422 branch. Regression guard — an earlier version
+    // of this card gated the button on a `access_token_present` field the Meta service never actually sends,
+    // which disabled Connect for every listed Page.
     expect(screen.getByRole('button', { name: 'Connect Main Page' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Connect No Token Page' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Connect Other Page' })).toBeEnabled()
 
     await userEvent.click(screen.getByRole('button', { name: 'Connect Main Page' }))
     await waitFor(() => expect(connectBodies).toHaveLength(1))
@@ -322,7 +328,7 @@ describe('Log in with Facebook flow', () => {
     )
     mockFbPages(() =>
       HttpResponse.json({
-        data: { session_id: 'sess_abc', pages: [{ id: '12345', name: 'Main', access_token_present: true }] },
+        data: { session_id: 'sess_abc', pages: [{ id: '12345', name: 'Main' }] },
         success: true,
       }),
     )
@@ -346,7 +352,7 @@ describe('Log in with Facebook flow', () => {
     )
     mockFbPages(() =>
       HttpResponse.json({
-        data: { session_id: 'sess_abc', pages: [{ id: '12345', name: 'Main', access_token_present: true }] },
+        data: { session_id: 'sess_abc', pages: [{ id: '12345', name: 'Main' }] },
         success: true,
       }),
     )
