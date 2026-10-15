@@ -214,19 +214,8 @@ export function FacebookLoginCard() {
                     <div className="space-y-1 text-sm">
                       <p className="font-medium">{page.name}</p>
                       <p className="text-muted-foreground">Facebook page {page.id}</p>
-                      {!page.accessTokenPresent && (
-                        <p className="text-muted-foreground">
-                          No access token available for this Page. Facebook may not have granted the required
-                          permissions.
-                        </p>
-                      )}
                     </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => pick(page)}
-                      disabled={connecting || !page.accessTokenPresent}
-                    >
+                    <Button type="button" size="sm" onClick={() => pick(page)} disabled={connecting}>
                       {label}
                     </Button>
                   </li>
