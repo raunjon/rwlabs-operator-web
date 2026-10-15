@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
-import type { FacebookPage } from './api'
+import { Field } from '@/components/ui/field'
+import { NativeSelect } from '@/components/ui/native-select'
+import type { FacebookAdAccount, FacebookPage } from './api'
 import {
   FACEBOOK_CALLBACK_PATH,
   FACEBOOK_CANCELLED_MESSAGE,
@@ -32,6 +34,10 @@ const POPUP_NAME = 'fb-login'
 export function FacebookLoginCard() {
   const [stateToken, setStateToken] = useState<string | null>(null)
   const [pages, setPages] = useState<FacebookPage[] | null>(null)
+  const [adAccounts, setAdAccounts] = useState<FacebookAdAccount[]>([])
+  const [adsAccess, setAdsAccess] = useState(false)
+  // Empty string = "— none —"; otherwise the chosen ad account id. Reset to empty whenever a new picker is shown.
+  const [selectedAdAccountId, setSelectedAdAccountId] = useState('')
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [justConnected, setJustConnected] = useState<string | null>(null)
   const [cancelled, setCancelled] = useState(false)
@@ -60,6 +66,9 @@ export function FacebookLoginCard() {
   function reset() {
     setStateToken(null)
     setPages(null)
+    setAdAccounts([])
+    setAdsAccess(false)
+    setSelectedAdAccountId('')
     setSessionId(null)
     setCancelled(false)
     setPopupBlocked(false)
@@ -128,9 +137,12 @@ export function FacebookLoginCard() {
       exchange.mutate(
         { code: event.data.code, stateToken: expectedToken, redirectUri },
         {
-          onSuccess: ({ sessionId: sid, pages: list }) => {
+          onSuccess: ({ sessionId: sid, pages: list, adAccounts: accounts, adsAccess: access }) => {
             setSessionId(sid)
             setPages(list)
+            setAdAccounts(accounts)
+            setAdsAccess(access)
+            setSelectedAdAccountId('')
           },
         },
       )
@@ -143,7 +155,7 @@ export function FacebookLoginCard() {
   function pick(page: FacebookPage) {
     if (!sessionId) return
     connect.mutate(
-      { sessionId, pageId: page.id, label: page.name, adAccountId: null },
+      { sessionId, pageId: page.id, label: page.name, adAccountId: selectedAdAccountId || null },
       {
         onSuccess: (credential) => {
           setJustConnected(credential.label)
@@ -197,31 +209,53 @@ export function FacebookLoginCard() {
               </Button>
             </>
           ) : (
-            <ul className="divide-y divide-border">
-              {pages.map((page) => {
-                // Pending state is per-page, not per-card: only the button whose pick() call is in flight shows
-                // the pending copy; the others stay enabled-ish but still disabled to prevent double-submits.
-                // connect.variables carries the submitted body during pending (React Query exposes it on the
-                // mutation state), so pageId === page.id tells us this is the active row.
-                const isConnectingThis = connecting && connect.variables?.pageId === page.id
-                // Give each button an accessible name that includes the Page it will connect, so a screen-reader
-                // user navigating by controls hears "Connect Main Page" instead of five identical "Connect this
-                // page" buttons. The visible text and the accessible name are the same string to avoid the "label
-                // in name" trap.
-                const label = isConnectingThis ? `Connecting ${page.name}…` : `Connect ${page.name}`
-                return (
-                  <li key={page.id} className="flex items-start justify-between gap-4 py-3">
-                    <div className="space-y-1 text-sm">
-                      <p className="font-medium">{page.name}</p>
-                      <p className="text-muted-foreground">Facebook page {page.id}</p>
-                    </div>
-                    <Button type="button" size="sm" onClick={() => pick(page)} disabled={connecting}>
-                      {label}
-                    </Button>
-                  </li>
-                )
-              })}
-            </ul>
+            <>
+              {adsAccess && adAccounts.length > 0 && (
+                // The ad account chosen here is sent with whichever Page the admin connects next. One session is
+                // one Page, so a single picker is enough; the admin can re-run Log in with Facebook for a second
+                // Page with a different ad account. "— none —" leaves `ad_account_id: null` so the Page is saved
+                // without ads, matching today's behaviour before this picker existed.
+                <Field id="meta-facebook-ad-account" label="Ad account (optional)">
+                  <NativeSelect
+                    value={selectedAdAccountId}
+                    onChange={(event) => setSelectedAdAccountId(event.target.value)}
+                    disabled={connecting}
+                  >
+                    <option value="">— none —</option>
+                    {adAccounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name ? `${account.name} (${account.id})` : account.id}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </Field>
+              )}
+              <ul className="divide-y divide-border">
+                {pages.map((page) => {
+                  // Pending state is per-page, not per-card: only the button whose pick() call is in flight shows
+                  // the pending copy; the others stay enabled-ish but still disabled to prevent double-submits.
+                  // connect.variables carries the submitted body during pending (React Query exposes it on the
+                  // mutation state), so pageId === page.id tells us this is the active row.
+                  const isConnectingThis = connecting && connect.variables?.pageId === page.id
+                  // Give each button an accessible name that includes the Page it will connect, so a screen-reader
+                  // user navigating by controls hears "Connect Main Page" instead of five identical "Connect this
+                  // page" buttons. The visible text and the accessible name are the same string to avoid the "label
+                  // in name" trap.
+                  const label = isConnectingThis ? `Connecting ${page.name}…` : `Connect ${page.name}`
+                  return (
+                    <li key={page.id} className="flex items-start justify-between gap-4 py-3">
+                      <div className="space-y-1 text-sm">
+                        <p className="font-medium">{page.name}</p>
+                        <p className="text-muted-foreground">Facebook page {page.id}</p>
+                      </div>
+                      <Button type="button" size="sm" onClick={() => pick(page)} disabled={connecting}>
+                        {label}
+                      </Button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </>
           )}
           {showPages && !noPages && (
             <div>

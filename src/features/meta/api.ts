@@ -164,14 +164,34 @@ export interface FacebookPage {
 // refuses to grant it (role too weak, permission declined), the server returns 422 which the UI surfaces via
 // `facebookFailure`.
 
+export interface FacebookAdAccount {
+  // Ad account id in Meta's own form (e.g. `act_123`), used as `ad_account_id` on the credentials request.
+  id: string
+  // Human-readable name as it appears in Meta Business.
+  name: string
+}
+
 export interface FacebookPagesResult {
   // Opaque one-shot id for the follow-up POST credentials. Expires after a short TTL (10 min) and is destroyed on
   // use, so the panel can't connect two pages from one login.
   sessionId: string
   pages: FacebookPage[]
+  // Ad accounts the admin's Facebook user manages, as returned by `/me/adaccounts`. Empty when the ads scope
+  // wasn't granted or the admin has no accounts.
+  adAccounts: FacebookAdAccount[]
+  // Whether the admin granted the ads scope. False means no `/me/adaccounts` call was attempted; the panel hides
+  // the ad account picker in that case.
+  adsAccess: boolean
 }
 
 function readFacebookPage(data: Record<string, unknown>): FacebookPage {
+  return {
+    id: text(data.id),
+    name: text(data.name),
+  }
+}
+
+function readFacebookAdAccount(data: Record<string, unknown>): FacebookAdAccount {
   return {
     id: text(data.id),
     name: text(data.name),
@@ -189,11 +209,14 @@ export async function requestFacebookPages(input: FacebookLoginReturn): Promise<
   })
   const data = envelopeData(body)
   if (!data || !text(data.session_id)) throw new ApiError(200, 'The server sent an unexpected response')
-  const list = Array.isArray(data.pages) ? (data.pages as unknown[]) : []
-  const pages = list
+  const pages = (Array.isArray(data.pages) ? (data.pages as unknown[]) : [])
     .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null && !Array.isArray(item))
     .map(readFacebookPage)
-  return { sessionId: text(data.session_id), pages }
+  const adAccounts = (Array.isArray(data.ad_accounts) ? (data.ad_accounts as unknown[]) : [])
+    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null && !Array.isArray(item))
+    .map(readFacebookAdAccount)
+    .filter((account) => account.id)
+  return { sessionId: text(data.session_id), pages, adAccounts, adsAccess: data.ads_access === true }
 }
 
 export interface NewFacebookCredential {
@@ -201,8 +224,8 @@ export interface NewFacebookCredential {
   pageId: string
   // Optional label; when omitted the server defaults to the Page name.
   label: string | null
-  // Optional ad account; the Facebook flow doesn't offer it (the panel's manual-form Edit does), so always null
-  // from this flow. Kept here for symmetry with the server's accepted shape.
+  // Optional ad account id as returned in `FacebookPagesResult.adAccounts`. The server validates it is in the
+  // user's list and 422s with "Pick one of the ad accounts listed." otherwise.
   adAccountId: string | null
 }
 
