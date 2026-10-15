@@ -8,9 +8,18 @@ import type { components, paths } from '@/lib/api/schema'
 // level). Field names are still checked against the generated schema: the keys below are typed from it, so a
 // rename in the gateway fails the typecheck.
 type GatewayEvent = components['schemas']['Event']
-type GatewayEventBody = NonNullable<
+type GatewayCreateBody = NonNullable<
   paths['/operator/api/events']['post']['requestBody']
 >['content']['application/json']
+type GatewayUpdateBody = NonNullable<
+  paths['/operator/api/events/{id}']['patch']['requestBody']
+>['content']['application/json']
+
+// Numbers the admin may leave empty. The gateway's OpenAPI types them as optional numbers; a create leaves an
+// empty one out, but an update has to send null to clear it (left out, the operator keeps the old value). The
+// gateway forwards null form-encoded as `base_price=`, which Rails saves as nil.
+type Clearable = 'base_price' | 'max_tickets' | 'max_male_tickets' | 'max_female_tickets'
+type UpdateBody = Omit<GatewayUpdateBody, Clearable | 'tenant_id'> & { [K in Clearable]: number | null }
 type GatewayVenue = components['schemas']['Venue']
 
 const EVENT_KEYS = {
@@ -31,24 +40,6 @@ const EVENT_KEYS = {
   features: 'features',
   tenantId: 'tenant_id',
 } as const satisfies Record<string, keyof GatewayEvent>
-
-const BODY_KEYS = {
-  title: 'title',
-  description: 'description',
-  startTime: 'start_time',
-  endTime: 'end_time',
-  venueId: 'venue_id',
-  area: 'area',
-  imageUrlVertical: 'image_url_vertical',
-  imageUrlHorizontal: 'image_url_horizontal',
-  basePrice: 'base_price',
-  coverPrice: 'cover_price',
-  maxTickets: 'max_tickets',
-  maxMaleTickets: 'max_male_tickets',
-  maxFemaleTickets: 'max_female_tickets',
-  features: 'features',
-  tenantId: 'tenant_id',
-} as const satisfies Record<string, keyof GatewayEventBody>
 
 const VENUE_NAME: keyof GatewayVenue = 'name'
 
@@ -148,7 +139,7 @@ function readEvent(data: Record<string, unknown>): EventRecord {
     maxTickets: integer(data[EVENT_KEYS.maxTickets]),
     maxMaleTickets: integer(data[EVENT_KEYS.maxMaleTickets]),
     maxFemaleTickets: integer(data[EVENT_KEYS.maxFemaleTickets]),
-    // A cleared list sent through the gateway is stored as [""] (see eventBody), so blanks are dropped on read.
+    // A cleared list sent through the gateway is stored as [""] (see sharedFields), so blanks are dropped on read.
     features: Array.isArray(features) ? features.filter((f): f is string => typeof f === 'string' && f.trim() !== '') : [],
     tenantId: integer(data[EVENT_KEYS.tenantId]),
   }
@@ -199,40 +190,56 @@ export async function fetchVenues(): Promise<Venue[]> {
     .filter((venue): venue is Venue => venue.id !== null)
 }
 
-// The request body. The gateway forwards it to the operator form-encoded, which turns an empty array into
-// `features[]=` and Rails into [""], so an empty feature list is left out rather than sent.
-function eventBody(input: EventInput, { withTenant }: { withTenant: boolean }): Record<string, unknown> {
-  const body: Record<string, unknown> = {
-    [BODY_KEYS.title]: input.title,
-    [BODY_KEYS.description]: input.description,
-    [BODY_KEYS.startTime]: new Date(input.startTime).toISOString(),
-    [BODY_KEYS.endTime]: new Date(input.endTime).toISOString(),
-    [BODY_KEYS.venueId]: input.venueId,
-    [BODY_KEYS.area]: input.area,
-    [BODY_KEYS.imageUrlVertical]: input.imageUrlVertical,
-    [BODY_KEYS.imageUrlHorizontal]: input.imageUrlHorizontal,
-    [BODY_KEYS.basePrice]: input.basePrice,
-    [BODY_KEYS.coverPrice]: input.coverPrice,
-    [BODY_KEYS.maxTickets]: input.maxTickets,
-    [BODY_KEYS.maxMaleTickets]: input.maxMaleTickets,
-    [BODY_KEYS.maxFemaleTickets]: input.maxFemaleTickets,
+// The fields every request body has. The gateway forwards bodies to the operator form-encoded, which turns an
+// empty array into `features[]=` and Rails into [""], so an empty feature list is left out rather than sent.
+function sharedFields(input: EventInput) {
+  return {
+    title: input.title,
+    description: input.description,
+    start_time: new Date(input.startTime).toISOString(),
+    end_time: new Date(input.endTime).toISOString(),
+    venue_id: input.venueId,
+    area: input.area,
+    image_url_vertical: input.imageUrlVertical,
+    image_url_horizontal: input.imageUrlHorizontal,
+    cover_price: input.coverPrice,
+    ...(input.features.length > 0 && { features: input.features }),
+  } satisfies Partial<GatewayCreateBody> & Partial<GatewayUpdateBody>
+}
+
+// Unset numbers and the tenant are undefined here, which JSON.stringify leaves out of the request.
+function createBody(input: EventInput): GatewayCreateBody {
+  return {
+    ...sharedFields(input),
+    base_price: input.basePrice ?? undefined,
+    max_tickets: input.maxTickets ?? undefined,
+    max_male_tickets: input.maxMaleTickets ?? undefined,
+    max_female_tickets: input.maxFemaleTickets ?? undefined,
+    tenant_id: input.tenantId,
   }
-  if (input.features.length > 0) body[BODY_KEYS.features] = input.features
-  if (withTenant && input.tenantId !== undefined) body[BODY_KEYS.tenantId] = input.tenantId
-  return body
+}
+
+function updateBody(input: EventInput): UpdateBody {
+  return {
+    ...sharedFields(input),
+    base_price: input.basePrice,
+    max_tickets: input.maxTickets,
+    max_male_tickets: input.maxMaleTickets,
+    max_female_tickets: input.maxFemaleTickets,
+  }
 }
 
 // POST /operator/api/events. A tenant admin's event goes to their own tenant (the operator reads it from the JWT);
 // a super admin must send tenant_id, or gets 422 "Tenant required". Validation failures are one joined 422.
 export async function requestCreateEvent(input: EventInput, timeoutMs: number = REQUEST_TIMEOUT_MS): Promise<EventRecord> {
-  const body = await requestWithSession('POST', '/operator/api/events', eventBody(input, { withTenant: true }), timeoutMs)
+  const body = await requestWithSession('POST', '/operator/api/events', createBody(input), timeoutMs)
   return readEvent(envelopeData(body))
 }
 
 // PATCH /operator/api/events/{id}. tenant_id is never sent: the operator refuses to change it (422 "Tenant id
 // cannot be changed"), and the edit screen only shows it.
 export async function requestUpdateEvent(id: number, input: EventInput): Promise<EventRecord> {
-  const body = await requestWithSession('PATCH', eventPath(id), eventBody(input, { withTenant: false }))
+  const body = await requestWithSession('PATCH', eventPath(id), updateBody(input))
   return readEvent(envelopeData(body))
 }
 

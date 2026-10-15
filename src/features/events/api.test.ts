@@ -216,10 +216,16 @@ describe('requestCreateEvent', () => {
       base_price: 1500,
       cover_price: 500,
       max_tickets: 80,
-      max_male_tickets: null,
-      max_female_tickets: null,
       features: ['welcome_drink'],
     })
+  })
+
+  it('leaves unset numbers out of a create (the gateway types them as optional numbers, not null)', async () => {
+    const bodies = captureCreate()
+    await requestCreateEvent(input())
+    for (const key of ['base_price', 'max_tickets', 'max_male_tickets', 'max_female_tickets']) {
+      expect(bodies[0]).not.toHaveProperty(key)
+    }
   })
 
   it('sends tenant_id when the super admin gives one', async () => {
@@ -269,6 +275,18 @@ describe('requestUpdateEvent', () => {
     expect(updated.title).toBe('Renamed')
     expect(bodies[0]).not.toHaveProperty('tenant_id')
     expect(bodies[0].title).toBe('Renamed')
+  })
+
+  it('sends null for a number the admin emptied, so the update clears it rather than keeping the old value', async () => {
+    const bodies: Record<string, unknown>[] = []
+    server.use(
+      http.patch('*/operator/api/events/12', async ({ request }) => {
+        bodies.push((await request.json()) as Record<string, unknown>)
+        return HttpResponse.json({ data: gatewayEvent(), success: true })
+      }),
+    )
+    await requestUpdateEvent(12, input({ basePrice: null, maxTickets: null }))
+    expect(bodies[0]).toMatchObject({ base_price: null, max_tickets: null, max_male_tickets: null, max_female_tickets: null })
   })
 })
 

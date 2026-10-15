@@ -318,6 +318,18 @@ describe('creating an event', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(UNREACHABLE_MESSAGE)
   })
 
+  it('shows a labelled skeleton for the venue while venues load', async () => {
+    server.use(
+      http.get('*/operator/api/venues', async () => {
+        await delay('infinite')
+        return HttpResponse.json({})
+      }),
+    )
+    renderApp('/t/events/new')
+    expect(await screen.findByRole('status', { name: 'Loading venues' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Venue')).not.toBeInTheDocument()
+  })
+
   it('a feature can be removed again before saving, and duplicates are ignored', async () => {
     renderApp('/t/events/new')
     await userEvent.type(await screen.findByLabelText('Features'), 'live band{Enter}live band{Enter}')

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { eventFailure, venuesQuery, type EventFailure } from './events'
 import { eventFormSchema, type EventFormFields } from './schema'
@@ -92,22 +93,30 @@ export function EventForm({
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Controller
-            control={form.control}
-            name="venueId"
-            render={({ field }) => (
-              <Field id={id('venue')} label="Venue" error={errors.venueId?.message ?? venuesFailure?.message}>
-                <NativeSelect {...field}>
-                  <option value="">{venues.isPending ? 'Loading venues…' : 'Choose a venue'}</option>
-                  {(venues.data ?? []).map((venue) => (
-                    <option key={venue.id} value={String(venue.id)}>
-                      {venue.name}
-                    </option>
-                  ))}
-                </NativeSelect>
-              </Field>
-            )}
-          />
+          {venues.isPending ? (
+            // The select appears once its options have arrived; until then, an announced placeholder.
+            <div role="status" aria-label="Loading venues" className="space-y-2">
+              <p className="text-sm font-medium">Venue</p>
+              <Skeleton className="h-9 w-full" />
+            </div>
+          ) : (
+            <Controller
+              control={form.control}
+              name="venueId"
+              render={({ field }) => (
+                <Field id={id('venue')} label="Venue" error={errors.venueId?.message ?? venuesFailure?.message}>
+                  <NativeSelect {...field}>
+                    <option value="">Choose a venue</option>
+                    {(venues.data ?? []).map((venue) => (
+                      <option key={venue.id} value={String(venue.id)}>
+                        {venue.name}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </Field>
+              )}
+            />
+          )}
           <Field id={id('area')} label="Area (optional)">
             <Input type="text" autoComplete="off" {...form.register('area')} />
           </Field>
