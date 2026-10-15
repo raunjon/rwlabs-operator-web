@@ -255,6 +255,11 @@ describe('requestFacebookPages', () => {
               { id: '12345', name: 'Main Page' },
               { id: '67890', name: 'Other Page' },
             ],
+            ad_accounts: [
+              { id: 'act_111', name: 'My Business' },
+              { id: 'act_222', name: '' },
+            ],
+            ads_access: true,
           },
           success: true,
         })
@@ -267,6 +272,11 @@ describe('requestFacebookPages', () => {
         { id: '12345', name: 'Main Page' },
         { id: '67890', name: 'Other Page' },
       ],
+      adAccounts: [
+        { id: 'act_111', name: 'My Business' },
+        { id: 'act_222', name: '' },
+      ],
+      adsAccess: true,
     })
     expect(seen!.body).toEqual({
       code: 'oauth-code',
@@ -282,6 +292,35 @@ describe('requestFacebookPages', () => {
       ),
     )
     await expect(requestFacebookPages(input)).resolves.toMatchObject({ sessionId: 'sess_abc', pages: [] })
+  })
+
+  it('defaults ad accounts to [] and ads access to false when the server omits them', async () => {
+    server.use(
+      http.post('*/operator/api/facebook_login/pages', () =>
+        HttpResponse.json({ data: { session_id: 'sess_abc', pages: [] }, success: true }),
+      ),
+    )
+    await expect(requestFacebookPages(input)).resolves.toMatchObject({ adAccounts: [], adsAccess: false })
+  })
+
+  it('drops ad accounts without an id so the picker never surfaces unselectable rows', async () => {
+    server.use(
+      http.post('*/operator/api/facebook_login/pages', () =>
+        HttpResponse.json({
+          data: {
+            session_id: 'sess_abc',
+            pages: [],
+            ad_accounts: [{ id: 'act_1', name: 'Keep me' }, { name: 'No id' }, 'not-an-object'],
+            ads_access: true,
+          },
+          success: true,
+        }),
+      ),
+    )
+    await expect(requestFacebookPages(input)).resolves.toMatchObject({
+      adAccounts: [{ id: 'act_1', name: 'Keep me' }],
+      adsAccess: true,
+    })
   })
 
   it.each([

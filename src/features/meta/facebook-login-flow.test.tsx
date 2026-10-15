@@ -239,13 +239,18 @@ describe('Log in with Facebook flow', () => {
       HttpResponse.json({
         data: {
           session_id: 'sess_abc',
-          // The Meta service only returns `{id, name}` for each page it lists (the Page access token is fetched
-          // server-side at the credentials step). This fixture mirrors that real shape so the panel can't quietly
-          // start depending on a field the server never sends.
+          // The Meta service returns `{id, name}` for each page and the admin's ad accounts separately
+          // (`login.pages` and `login.ad_accounts`). This fixture mirrors that real shape so the panel can't
+          // quietly start depending on a field the server never sends.
           pages: [
             { id: '12345', name: 'Main Page' },
             { id: '67890', name: 'Other Page' },
           ],
+          ad_accounts: [
+            { id: 'act_111', name: 'My Business' },
+            { id: 'act_222', name: 'Second Business' },
+          ],
+          ads_access: true,
         },
         success: true,
       }),
@@ -256,14 +261,14 @@ describe('Log in with Facebook flow', () => {
         callCount += 1
         if (callCount === 1) return HttpResponse.json({ data: [], success: true })
         return HttpResponse.json({
-          data: [{ id: 7, label: 'Main Page', page_id: '12345', ad_account_id: null }],
+          data: [{ id: 7, label: 'Main Page', page_id: '12345', ad_account_id: 'act_111' }],
           success: true,
         })
       }),
     )
     const connectBodies = mockFbCredentials(() =>
       HttpResponse.json({
-        data: { id: 7, label: 'Main Page', page_id: '12345', ad_account_id: null },
+        data: { id: 7, label: 'Main Page', page_id: '12345', ad_account_id: 'act_111' },
         success: true,
       }),
     )
@@ -285,13 +290,59 @@ describe('Log in with Facebook flow', () => {
     expect(screen.getByRole('button', { name: 'Connect Main Page' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Connect Other Page' })).toBeEnabled()
 
+    // The admin picks an ad account from the dropdown before connecting; the selection is attached to whichever
+    // Page they click Connect for. "— none —" leaves the Page without an ad account (the pre-OW-17 behaviour).
+    const adAccountSelect = screen.getByLabelText('Ad account (optional)')
+    await userEvent.selectOptions(adAccountSelect, 'act_111')
+
     await userEvent.click(screen.getByRole('button', { name: 'Connect Main Page' }))
     await waitFor(() => expect(connectBodies).toHaveLength(1))
-    expect(connectBodies[0]).toEqual({ session_id: 'sess_abc', page_id: '12345', label: 'Main Page' })
+    expect(connectBodies[0]).toEqual({
+      session_id: 'sess_abc',
+      page_id: '12345',
+      label: 'Main Page',
+      ad_account_id: 'act_111',
+    })
     expect(await screen.findByText('Connected Main Page.')).toBeInTheDocument()
     // The pages list on the main card refetched; new page is there.
     const metaPages = await screen.findAllByText('Facebook page 12345')
     expect(metaPages.length).toBeGreaterThan(0)
+  })
+
+  it("hides the ad account picker when the admin didn't grant the ads scope", async () => {
+    // ads_access: false means the admin's Facebook login didn't include ads_management/ads_read, so the server
+    // returned no ad accounts and the picker would be an empty dropdown. The panel hides it in that case; the
+    // credentials body omits ad_account_id, same as before OW-17.
+    mockAuthorize(() =>
+      HttpResponse.json({ data: { authorize_url: 'https://fb.test/dialog', state_token: 'tok-123' }, success: true }),
+    )
+    mockFbPages(() =>
+      HttpResponse.json({
+        data: {
+          session_id: 'sess_abc',
+          pages: [{ id: '12345', name: 'Main Page' }],
+          ad_accounts: [],
+          ads_access: false,
+        },
+        success: true,
+      }),
+    )
+    const connectBodies = mockFbCredentials(() =>
+      HttpResponse.json({
+        data: { id: 7, label: 'Main Page', page_id: '12345', ad_account_id: null },
+        success: true,
+      }),
+    )
+
+    await startLogin()
+    fireCallbackMessage({ code: 'oauth-code', stateToken: 'tok-123' })
+
+    expect(await screen.findByRole('button', { name: 'Connect Main Page' })).toBeEnabled()
+    expect(screen.queryByLabelText('Ad account (optional)')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Connect Main Page' }))
+    await waitFor(() => expect(connectBodies).toHaveLength(1))
+    expect(connectBodies[0]).toEqual({ session_id: 'sess_abc', page_id: '12345', label: 'Main Page' })
   })
 
   it('ignores a callback message with a mismatched state token (postMessage security)', async () => {
