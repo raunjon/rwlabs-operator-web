@@ -1,7 +1,7 @@
 # RWLabs Operator Web
 
 The operator panel for the RWLabs multi-tenant platform: a Vite + React + TypeScript SPA that talks only to the
-gateway (`thirtyplus_gateway`). Design: `docs/superpowers/specs/2026-10-12-operator-web-v1-design.md`.
+gateway (`rwlabs_gateway`). Design: `docs/superpowers/specs/2026-10-12-operator-web-v1-design.md`.
 
 ## Run it
 

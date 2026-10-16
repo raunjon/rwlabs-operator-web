@@ -8,7 +8,13 @@ export const Route = createFileRoute('/_authenticated/admin')({
     if (context.session.role !== 'super_admin') throw redirect({ to: homePath(context.session.role) })
   },
   component: () => (
-    <AppShell area="Super admin" nav={[{ label: 'Home', to: '/admin' }]}>
+    <AppShell
+      area="Super admin"
+      nav={[
+        { label: 'Home', to: '/admin' },
+        { label: 'Events', to: '/admin/events' },
+      ]}
+    >
       <Outlet />
     </AppShell>
   ),

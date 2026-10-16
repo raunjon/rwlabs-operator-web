@@ -9,7 +9,7 @@ import { useSession } from '@/lib/session/session'
 
 export interface NavItem {
   label: string
-  to: '/t' | '/t/team' | '/t/settings/meta' | '/admin'
+  to: '/t' | '/t/events' | '/t/team' | '/t/settings/meta' | '/admin' | '/admin/events'
 }
 
 export interface NavSection {

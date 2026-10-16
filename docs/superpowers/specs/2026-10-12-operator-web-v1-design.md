@@ -173,7 +173,7 @@ Route guards check the role from the session. Each shell has its own sidebar.
 - **Validation errors are a single joined message** (`errors.full_messages.join(', ')`), not per field. Forms show
   it as a form-level error. Field-level mapping would need a backend change and is not in v1.
 - **Generated types:** an `npm run api:types` script generates `src/lib/api/schema.d.ts` from
-  `../thirtyplus_gateway/docs/openapi/generated/openapi.yaml`. The generated file is committed, because the Docker
+  `../rwlabs_gateway/docs/openapi/generated/openapi.yaml`. The generated file is committed, because the Docker
   build cannot see sibling repos.
 
 ### 5.5 Source layout

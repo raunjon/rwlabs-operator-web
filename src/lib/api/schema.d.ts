@@ -1192,6 +1192,7 @@ export interface components {
             early_bird_end_date?: number;
             /** @description early_bird_end_date formatted for display in Asia/Kolkata time */
             early_bird_end_date_display?: string;
+            tenant_id?: number;
             /**
              * Format: int64
              * @description Unix timestamp (seconds)
@@ -1938,7 +1939,9 @@ export interface operations {
     };
     get_operator__api__events__upcoming: {
         parameters: {
-            query?: never;
+            query?: {
+                tenant_id?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1964,7 +1967,9 @@ export interface operations {
     };
     get_operator__api__events: {
         parameters: {
-            query?: never;
+            query?: {
+                tenant_id?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1995,7 +2000,31 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": {
+                    title: string;
+                    description?: string;
+                    /** Format: date */
+                    date?: string;
+                    /** Format: date-time */
+                    start_time: string;
+                    /** Format: date-time */
+                    end_time: string;
+                    venue_id: number;
+                    area?: string;
+                    image_url_vertical?: string;
+                    image_url_horizontal?: string;
+                    base_price?: number;
+                    cover_price?: number;
+                    max_male_tickets?: number;
+                    max_female_tickets?: number;
+                    max_tickets?: number;
+                    features?: string[];
+                    tenant_id?: number;
+                };
+            };
+        };
         responses: {
             /** @description Success */
             200: {
@@ -2043,7 +2072,31 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": {
+                    title?: string;
+                    description?: string;
+                    /** Format: date */
+                    date?: string;
+                    /** Format: date-time */
+                    start_time?: string;
+                    /** Format: date-time */
+                    end_time?: string;
+                    venue_id?: number;
+                    area?: string;
+                    image_url_vertical?: string;
+                    image_url_horizontal?: string;
+                    base_price?: number;
+                    cover_price?: number;
+                    max_male_tickets?: number;
+                    max_female_tickets?: number;
+                    max_tickets?: number;
+                    features?: string[];
+                    tenant_id?: number;
+                };
+            };
+        };
         responses: {
             /** @description Success */
             200: {
@@ -2091,7 +2144,31 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": {
+                    title?: string;
+                    description?: string;
+                    /** Format: date */
+                    date?: string;
+                    /** Format: date-time */
+                    start_time?: string;
+                    /** Format: date-time */
+                    end_time?: string;
+                    venue_id?: number;
+                    area?: string;
+                    image_url_vertical?: string;
+                    image_url_horizontal?: string;
+                    base_price?: number;
+                    cover_price?: number;
+                    max_male_tickets?: number;
+                    max_female_tickets?: number;
+                    max_tickets?: number;
+                    features?: string[];
+                    tenant_id?: number;
+                };
+            };
+        };
         responses: {
             /** @description Success */
             200: {

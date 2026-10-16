@@ -24,6 +24,12 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedTIndexRouteImport } from './routes/_authenticated/t/index'
 import { Route as AuthenticatedTTeamRouteImport } from './routes/_authenticated/t/team'
 import { Route as MetaFacebookCallbackRouteImport } from './routes/meta/facebook.callback'
+import { Route as AuthenticatedAdminEventsIndexRouteImport } from './routes/_authenticated/admin/events.index'
+import { Route as AuthenticatedAdminEventsIdRouteImport } from './routes/_authenticated/admin/events.$id'
+import { Route as AuthenticatedAdminEventsNewRouteImport } from './routes/_authenticated/admin/events.new'
+import { Route as AuthenticatedTEventsIndexRouteImport } from './routes/_authenticated/t/events.index'
+import { Route as AuthenticatedTEventsIdRouteImport } from './routes/_authenticated/t/events.$id'
+import { Route as AuthenticatedTEventsNewRouteImport } from './routes/_authenticated/t/events.new'
 import { Route as AuthenticatedTSettingsMetaRouteImport } from './routes/_authenticated/t/settings/meta'
 
 const IndexRoute = IndexRouteImport.update({
@@ -100,6 +106,40 @@ const MetaFacebookCallbackRoute = MetaFacebookCallbackRouteImport.update({
   path: '/meta/facebook/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminEventsIndexRoute =
+  AuthenticatedAdminEventsIndexRouteImport.update({
+    id: '/events/',
+    path: '/events/',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminEventsIdRoute =
+  AuthenticatedAdminEventsIdRouteImport.update({
+    id: '/events/$id',
+    path: '/events/$id',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminEventsNewRoute =
+  AuthenticatedAdminEventsNewRouteImport.update({
+    id: '/events/new',
+    path: '/events/new',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedTEventsIndexRoute =
+  AuthenticatedTEventsIndexRouteImport.update({
+    id: '/events/',
+    path: '/events/',
+    getParentRoute: () => AuthenticatedTRoute,
+  } as any)
+const AuthenticatedTEventsIdRoute = AuthenticatedTEventsIdRouteImport.update({
+  id: '/events/$id',
+  path: '/events/$id',
+  getParentRoute: () => AuthenticatedTRoute,
+} as any)
+const AuthenticatedTEventsNewRoute = AuthenticatedTEventsNewRouteImport.update({
+  id: '/events/new',
+  path: '/events/new',
+  getParentRoute: () => AuthenticatedTRoute,
+} as any)
 const AuthenticatedTSettingsMetaRoute =
   AuthenticatedTSettingsMetaRouteImport.update({
     id: '/settings/meta',
@@ -122,7 +162,13 @@ export interface FileRoutesByFullPath {
   '/meta/facebook/callback': typeof MetaFacebookCallbackRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/t/': typeof AuthenticatedTIndexRoute
+  '/admin/events/$id': typeof AuthenticatedAdminEventsIdRoute
+  '/admin/events/new': typeof AuthenticatedAdminEventsNewRoute
+  '/t/events/$id': typeof AuthenticatedTEventsIdRoute
+  '/t/events/new': typeof AuthenticatedTEventsNewRoute
   '/t/settings/meta': typeof AuthenticatedTSettingsMetaRoute
+  '/admin/events/': typeof AuthenticatedAdminEventsIndexRoute
+  '/t/events/': typeof AuthenticatedTEventsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -137,7 +183,13 @@ export interface FileRoutesByTo {
   '/meta/facebook/callback': typeof MetaFacebookCallbackRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/t': typeof AuthenticatedTIndexRoute
+  '/admin/events/$id': typeof AuthenticatedAdminEventsIdRoute
+  '/admin/events/new': typeof AuthenticatedAdminEventsNewRoute
+  '/t/events/$id': typeof AuthenticatedTEventsIdRoute
+  '/t/events/new': typeof AuthenticatedTEventsNewRoute
   '/t/settings/meta': typeof AuthenticatedTSettingsMetaRoute
+  '/admin/events': typeof AuthenticatedAdminEventsIndexRoute
+  '/t/events': typeof AuthenticatedTEventsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -156,7 +208,13 @@ export interface FileRoutesById {
   '/meta/facebook/callback': typeof MetaFacebookCallbackRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/t/': typeof AuthenticatedTIndexRoute
+  '/_authenticated/admin/events/$id': typeof AuthenticatedAdminEventsIdRoute
+  '/_authenticated/admin/events/new': typeof AuthenticatedAdminEventsNewRoute
+  '/_authenticated/t/events/$id': typeof AuthenticatedTEventsIdRoute
+  '/_authenticated/t/events/new': typeof AuthenticatedTEventsNewRoute
   '/_authenticated/t/settings/meta': typeof AuthenticatedTSettingsMetaRoute
+  '/_authenticated/admin/events/': typeof AuthenticatedAdminEventsIndexRoute
+  '/_authenticated/t/events/': typeof AuthenticatedTEventsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -175,7 +233,13 @@ export interface FileRouteTypes {
     | '/meta/facebook/callback'
     | '/admin/'
     | '/t/'
+    | '/admin/events/$id'
+    | '/admin/events/new'
+    | '/t/events/$id'
+    | '/t/events/new'
     | '/t/settings/meta'
+    | '/admin/events/'
+    | '/t/events/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -190,7 +254,13 @@ export interface FileRouteTypes {
     | '/meta/facebook/callback'
     | '/admin'
     | '/t'
+    | '/admin/events/$id'
+    | '/admin/events/new'
+    | '/t/events/$id'
+    | '/t/events/new'
     | '/t/settings/meta'
+    | '/admin/events'
+    | '/t/events'
   id:
     | '__root__'
     | '/'
@@ -208,7 +278,13 @@ export interface FileRouteTypes {
     | '/meta/facebook/callback'
     | '/_authenticated/admin/'
     | '/_authenticated/t/'
+    | '/_authenticated/admin/events/$id'
+    | '/_authenticated/admin/events/new'
+    | '/_authenticated/t/events/$id'
+    | '/_authenticated/t/events/new'
     | '/_authenticated/t/settings/meta'
+    | '/_authenticated/admin/events/'
+    | '/_authenticated/t/events/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -331,6 +407,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MetaFacebookCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/events/': {
+      id: '/_authenticated/admin/events/'
+      path: '/events'
+      fullPath: '/admin/events/'
+      preLoaderRoute: typeof AuthenticatedAdminEventsIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/events/$id': {
+      id: '/_authenticated/admin/events/$id'
+      path: '/events/$id'
+      fullPath: '/admin/events/$id'
+      preLoaderRoute: typeof AuthenticatedAdminEventsIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/events/new': {
+      id: '/_authenticated/admin/events/new'
+      path: '/events/new'
+      fullPath: '/admin/events/new'
+      preLoaderRoute: typeof AuthenticatedAdminEventsNewRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/t/events/': {
+      id: '/_authenticated/t/events/'
+      path: '/events'
+      fullPath: '/t/events/'
+      preLoaderRoute: typeof AuthenticatedTEventsIndexRouteImport
+      parentRoute: typeof AuthenticatedTRoute
+    }
+    '/_authenticated/t/events/$id': {
+      id: '/_authenticated/t/events/$id'
+      path: '/events/$id'
+      fullPath: '/t/events/$id'
+      preLoaderRoute: typeof AuthenticatedTEventsIdRouteImport
+      parentRoute: typeof AuthenticatedTRoute
+    }
+    '/_authenticated/t/events/new': {
+      id: '/_authenticated/t/events/new'
+      path: '/events/new'
+      fullPath: '/t/events/new'
+      preLoaderRoute: typeof AuthenticatedTEventsNewRouteImport
+      parentRoute: typeof AuthenticatedTRoute
+    }
     '/_authenticated/t/settings/meta': {
       id: '/_authenticated/t/settings/meta'
       path: '/settings/meta'
@@ -343,10 +461,16 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminEventsIdRoute: typeof AuthenticatedAdminEventsIdRoute
+  AuthenticatedAdminEventsNewRoute: typeof AuthenticatedAdminEventsNewRoute
+  AuthenticatedAdminEventsIndexRoute: typeof AuthenticatedAdminEventsIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  AuthenticatedAdminEventsIdRoute: AuthenticatedAdminEventsIdRoute,
+  AuthenticatedAdminEventsNewRoute: AuthenticatedAdminEventsNewRoute,
+  AuthenticatedAdminEventsIndexRoute: AuthenticatedAdminEventsIndexRoute,
 }
 
 const AuthenticatedAdminRouteWithChildren =
@@ -355,13 +479,19 @@ const AuthenticatedAdminRouteWithChildren =
 interface AuthenticatedTRouteChildren {
   AuthenticatedTTeamRoute: typeof AuthenticatedTTeamRoute
   AuthenticatedTIndexRoute: typeof AuthenticatedTIndexRoute
+  AuthenticatedTEventsIdRoute: typeof AuthenticatedTEventsIdRoute
+  AuthenticatedTEventsNewRoute: typeof AuthenticatedTEventsNewRoute
   AuthenticatedTSettingsMetaRoute: typeof AuthenticatedTSettingsMetaRoute
+  AuthenticatedTEventsIndexRoute: typeof AuthenticatedTEventsIndexRoute
 }
 
 const AuthenticatedTRouteChildren: AuthenticatedTRouteChildren = {
   AuthenticatedTTeamRoute: AuthenticatedTTeamRoute,
   AuthenticatedTIndexRoute: AuthenticatedTIndexRoute,
+  AuthenticatedTEventsIdRoute: AuthenticatedTEventsIdRoute,
+  AuthenticatedTEventsNewRoute: AuthenticatedTEventsNewRoute,
   AuthenticatedTSettingsMetaRoute: AuthenticatedTSettingsMetaRoute,
+  AuthenticatedTEventsIndexRoute: AuthenticatedTEventsIndexRoute,
 }
 
 const AuthenticatedTRouteWithChildren = AuthenticatedTRoute._addFileChildren(
