@@ -27,10 +27,16 @@ import { Route as MetaFacebookCallbackRouteImport } from './routes/meta/facebook
 import { Route as AuthenticatedAdminEventsIndexRouteImport } from './routes/_authenticated/admin/events.index'
 import { Route as AuthenticatedAdminEventsIdRouteImport } from './routes/_authenticated/admin/events.$id'
 import { Route as AuthenticatedAdminEventsNewRouteImport } from './routes/_authenticated/admin/events.new'
+import { Route as AuthenticatedAdminVenuesIndexRouteImport } from './routes/_authenticated/admin/venues.index'
+import { Route as AuthenticatedAdminVenuesNewRouteImport } from './routes/_authenticated/admin/venues.new'
 import { Route as AuthenticatedTEventsIndexRouteImport } from './routes/_authenticated/t/events.index'
 import { Route as AuthenticatedTEventsIdRouteImport } from './routes/_authenticated/t/events.$id'
 import { Route as AuthenticatedTEventsNewRouteImport } from './routes/_authenticated/t/events.new'
 import { Route as AuthenticatedTSettingsMetaRouteImport } from './routes/_authenticated/t/settings/meta'
+import { Route as AuthenticatedTVenuesIndexRouteImport } from './routes/_authenticated/t/venues.index'
+import { Route as AuthenticatedTVenuesIdRouteImport } from './routes/_authenticated/t/venues.$id'
+import { Route as AuthenticatedAdminVenuesIdIndexRouteImport } from './routes/_authenticated/admin/venues.$id.index'
+import { Route as AuthenticatedAdminVenuesIdEditRouteImport } from './routes/_authenticated/admin/venues.$id.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -124,6 +130,18 @@ const AuthenticatedAdminEventsNewRoute =
     path: '/events/new',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminVenuesIndexRoute =
+  AuthenticatedAdminVenuesIndexRouteImport.update({
+    id: '/venues/',
+    path: '/venues/',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminVenuesNewRoute =
+  AuthenticatedAdminVenuesNewRouteImport.update({
+    id: '/venues/new',
+    path: '/venues/new',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedTEventsIndexRoute =
   AuthenticatedTEventsIndexRouteImport.update({
     id: '/events/',
@@ -146,6 +164,29 @@ const AuthenticatedTSettingsMetaRoute =
     path: '/settings/meta',
     getParentRoute: () => AuthenticatedTRoute,
   } as any)
+const AuthenticatedTVenuesIndexRoute =
+  AuthenticatedTVenuesIndexRouteImport.update({
+    id: '/venues/',
+    path: '/venues/',
+    getParentRoute: () => AuthenticatedTRoute,
+  } as any)
+const AuthenticatedTVenuesIdRoute = AuthenticatedTVenuesIdRouteImport.update({
+  id: '/venues/$id',
+  path: '/venues/$id',
+  getParentRoute: () => AuthenticatedTRoute,
+} as any)
+const AuthenticatedAdminVenuesIdIndexRoute =
+  AuthenticatedAdminVenuesIdIndexRouteImport.update({
+    id: '/venues/$id/',
+    path: '/venues/$id/',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminVenuesIdEditRoute =
+  AuthenticatedAdminVenuesIdEditRouteImport.update({
+    id: '/venues/$id/edit',
+    path: '/venues/$id/edit',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -164,11 +205,17 @@ export interface FileRoutesByFullPath {
   '/t/': typeof AuthenticatedTIndexRoute
   '/admin/events/$id': typeof AuthenticatedAdminEventsIdRoute
   '/admin/events/new': typeof AuthenticatedAdminEventsNewRoute
+  '/admin/venues/new': typeof AuthenticatedAdminVenuesNewRoute
   '/t/events/$id': typeof AuthenticatedTEventsIdRoute
   '/t/events/new': typeof AuthenticatedTEventsNewRoute
   '/t/settings/meta': typeof AuthenticatedTSettingsMetaRoute
+  '/t/venues/$id': typeof AuthenticatedTVenuesIdRoute
   '/admin/events/': typeof AuthenticatedAdminEventsIndexRoute
+  '/admin/venues/': typeof AuthenticatedAdminVenuesIndexRoute
   '/t/events/': typeof AuthenticatedTEventsIndexRoute
+  '/t/venues/': typeof AuthenticatedTVenuesIndexRoute
+  '/admin/venues/$id/edit': typeof AuthenticatedAdminVenuesIdEditRoute
+  '/admin/venues/$id/': typeof AuthenticatedAdminVenuesIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -185,11 +232,17 @@ export interface FileRoutesByTo {
   '/t': typeof AuthenticatedTIndexRoute
   '/admin/events/$id': typeof AuthenticatedAdminEventsIdRoute
   '/admin/events/new': typeof AuthenticatedAdminEventsNewRoute
+  '/admin/venues/new': typeof AuthenticatedAdminVenuesNewRoute
   '/t/events/$id': typeof AuthenticatedTEventsIdRoute
   '/t/events/new': typeof AuthenticatedTEventsNewRoute
   '/t/settings/meta': typeof AuthenticatedTSettingsMetaRoute
+  '/t/venues/$id': typeof AuthenticatedTVenuesIdRoute
   '/admin/events': typeof AuthenticatedAdminEventsIndexRoute
+  '/admin/venues': typeof AuthenticatedAdminVenuesIndexRoute
   '/t/events': typeof AuthenticatedTEventsIndexRoute
+  '/t/venues': typeof AuthenticatedTVenuesIndexRoute
+  '/admin/venues/$id/edit': typeof AuthenticatedAdminVenuesIdEditRoute
+  '/admin/venues/$id': typeof AuthenticatedAdminVenuesIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -210,11 +263,17 @@ export interface FileRoutesById {
   '/_authenticated/t/': typeof AuthenticatedTIndexRoute
   '/_authenticated/admin/events/$id': typeof AuthenticatedAdminEventsIdRoute
   '/_authenticated/admin/events/new': typeof AuthenticatedAdminEventsNewRoute
+  '/_authenticated/admin/venues/new': typeof AuthenticatedAdminVenuesNewRoute
   '/_authenticated/t/events/$id': typeof AuthenticatedTEventsIdRoute
   '/_authenticated/t/events/new': typeof AuthenticatedTEventsNewRoute
   '/_authenticated/t/settings/meta': typeof AuthenticatedTSettingsMetaRoute
+  '/_authenticated/t/venues/$id': typeof AuthenticatedTVenuesIdRoute
   '/_authenticated/admin/events/': typeof AuthenticatedAdminEventsIndexRoute
+  '/_authenticated/admin/venues/': typeof AuthenticatedAdminVenuesIndexRoute
   '/_authenticated/t/events/': typeof AuthenticatedTEventsIndexRoute
+  '/_authenticated/t/venues/': typeof AuthenticatedTVenuesIndexRoute
+  '/_authenticated/admin/venues/$id/edit': typeof AuthenticatedAdminVenuesIdEditRoute
+  '/_authenticated/admin/venues/$id/': typeof AuthenticatedAdminVenuesIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -235,11 +294,17 @@ export interface FileRouteTypes {
     | '/t/'
     | '/admin/events/$id'
     | '/admin/events/new'
+    | '/admin/venues/new'
     | '/t/events/$id'
     | '/t/events/new'
     | '/t/settings/meta'
+    | '/t/venues/$id'
     | '/admin/events/'
+    | '/admin/venues/'
     | '/t/events/'
+    | '/t/venues/'
+    | '/admin/venues/$id/edit'
+    | '/admin/venues/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -256,11 +321,17 @@ export interface FileRouteTypes {
     | '/t'
     | '/admin/events/$id'
     | '/admin/events/new'
+    | '/admin/venues/new'
     | '/t/events/$id'
     | '/t/events/new'
     | '/t/settings/meta'
+    | '/t/venues/$id'
     | '/admin/events'
+    | '/admin/venues'
     | '/t/events'
+    | '/t/venues'
+    | '/admin/venues/$id/edit'
+    | '/admin/venues/$id'
   id:
     | '__root__'
     | '/'
@@ -280,11 +351,17 @@ export interface FileRouteTypes {
     | '/_authenticated/t/'
     | '/_authenticated/admin/events/$id'
     | '/_authenticated/admin/events/new'
+    | '/_authenticated/admin/venues/new'
     | '/_authenticated/t/events/$id'
     | '/_authenticated/t/events/new'
     | '/_authenticated/t/settings/meta'
+    | '/_authenticated/t/venues/$id'
     | '/_authenticated/admin/events/'
+    | '/_authenticated/admin/venues/'
     | '/_authenticated/t/events/'
+    | '/_authenticated/t/venues/'
+    | '/_authenticated/admin/venues/$id/edit'
+    | '/_authenticated/admin/venues/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -428,6 +505,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminEventsNewRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/venues/': {
+      id: '/_authenticated/admin/venues/'
+      path: '/venues'
+      fullPath: '/admin/venues/'
+      preLoaderRoute: typeof AuthenticatedAdminVenuesIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/venues/new': {
+      id: '/_authenticated/admin/venues/new'
+      path: '/venues/new'
+      fullPath: '/admin/venues/new'
+      preLoaderRoute: typeof AuthenticatedAdminVenuesNewRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/t/events/': {
       id: '/_authenticated/t/events/'
       path: '/events'
@@ -456,6 +547,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTSettingsMetaRouteImport
       parentRoute: typeof AuthenticatedTRoute
     }
+    '/_authenticated/t/venues/': {
+      id: '/_authenticated/t/venues/'
+      path: '/venues'
+      fullPath: '/t/venues/'
+      preLoaderRoute: typeof AuthenticatedTVenuesIndexRouteImport
+      parentRoute: typeof AuthenticatedTRoute
+    }
+    '/_authenticated/t/venues/$id': {
+      id: '/_authenticated/t/venues/$id'
+      path: '/venues/$id'
+      fullPath: '/t/venues/$id'
+      preLoaderRoute: typeof AuthenticatedTVenuesIdRouteImport
+      parentRoute: typeof AuthenticatedTRoute
+    }
+    '/_authenticated/admin/venues/$id/': {
+      id: '/_authenticated/admin/venues/$id/'
+      path: '/venues/$id'
+      fullPath: '/admin/venues/$id/'
+      preLoaderRoute: typeof AuthenticatedAdminVenuesIdIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/venues/$id/edit': {
+      id: '/_authenticated/admin/venues/$id/edit'
+      path: '/venues/$id/edit'
+      fullPath: '/admin/venues/$id/edit'
+      preLoaderRoute: typeof AuthenticatedAdminVenuesIdEditRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
@@ -463,14 +582,22 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminEventsIdRoute: typeof AuthenticatedAdminEventsIdRoute
   AuthenticatedAdminEventsNewRoute: typeof AuthenticatedAdminEventsNewRoute
+  AuthenticatedAdminVenuesNewRoute: typeof AuthenticatedAdminVenuesNewRoute
   AuthenticatedAdminEventsIndexRoute: typeof AuthenticatedAdminEventsIndexRoute
+  AuthenticatedAdminVenuesIndexRoute: typeof AuthenticatedAdminVenuesIndexRoute
+  AuthenticatedAdminVenuesIdEditRoute: typeof AuthenticatedAdminVenuesIdEditRoute
+  AuthenticatedAdminVenuesIdIndexRoute: typeof AuthenticatedAdminVenuesIdIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminEventsIdRoute: AuthenticatedAdminEventsIdRoute,
   AuthenticatedAdminEventsNewRoute: AuthenticatedAdminEventsNewRoute,
+  AuthenticatedAdminVenuesNewRoute: AuthenticatedAdminVenuesNewRoute,
   AuthenticatedAdminEventsIndexRoute: AuthenticatedAdminEventsIndexRoute,
+  AuthenticatedAdminVenuesIndexRoute: AuthenticatedAdminVenuesIndexRoute,
+  AuthenticatedAdminVenuesIdEditRoute: AuthenticatedAdminVenuesIdEditRoute,
+  AuthenticatedAdminVenuesIdIndexRoute: AuthenticatedAdminVenuesIdIndexRoute,
 }
 
 const AuthenticatedAdminRouteWithChildren =
@@ -482,7 +609,9 @@ interface AuthenticatedTRouteChildren {
   AuthenticatedTEventsIdRoute: typeof AuthenticatedTEventsIdRoute
   AuthenticatedTEventsNewRoute: typeof AuthenticatedTEventsNewRoute
   AuthenticatedTSettingsMetaRoute: typeof AuthenticatedTSettingsMetaRoute
+  AuthenticatedTVenuesIdRoute: typeof AuthenticatedTVenuesIdRoute
   AuthenticatedTEventsIndexRoute: typeof AuthenticatedTEventsIndexRoute
+  AuthenticatedTVenuesIndexRoute: typeof AuthenticatedTVenuesIndexRoute
 }
 
 const AuthenticatedTRouteChildren: AuthenticatedTRouteChildren = {
@@ -491,7 +620,9 @@ const AuthenticatedTRouteChildren: AuthenticatedTRouteChildren = {
   AuthenticatedTEventsIdRoute: AuthenticatedTEventsIdRoute,
   AuthenticatedTEventsNewRoute: AuthenticatedTEventsNewRoute,
   AuthenticatedTSettingsMetaRoute: AuthenticatedTSettingsMetaRoute,
+  AuthenticatedTVenuesIdRoute: AuthenticatedTVenuesIdRoute,
   AuthenticatedTEventsIndexRoute: AuthenticatedTEventsIndexRoute,
+  AuthenticatedTVenuesIndexRoute: AuthenticatedTVenuesIndexRoute,
 }
 
 const AuthenticatedTRouteWithChildren = AuthenticatedTRoute._addFileChildren(

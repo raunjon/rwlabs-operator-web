@@ -13,6 +13,7 @@ export const Route = createFileRoute('/_authenticated/admin')({
       nav={[
         { label: 'Home', to: '/admin' },
         { label: 'Events', to: '/admin/events' },
+        { label: 'Venues', to: '/admin/venues' },
       ]}
     >
       <Outlet />
