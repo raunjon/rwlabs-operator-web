@@ -53,7 +53,7 @@ export function EventsListPage({ area, search }: { area: EventsArea; search: Eve
         </Button>
       </div>
 
-      <Filters area={area} search={search} venues={venues.data ?? []} />
+      <Filters area={area} search={search} venues={venues.data ?? []} venuesPending={venues.isPending} />
 
       {venues.isError && (
         // The events still list without venues; only their names and the venue filter are missing.
@@ -88,7 +88,7 @@ export function EventsListPage({ area, search }: { area: EventsArea; search: Eve
         <EmptyState area={area} search={search} pastTheEnd={(search.page ?? 1) > 1} />
       ) : (
         <>
-          <EventsTable area={area} events={events.data.events} venues={venues.data ?? []} />
+          <EventsTable area={area} events={events.data.events} venues={venues.data ?? []} venuesPending={venues.isPending} />
           <Pagination
             area={area}
             search={search}
@@ -102,7 +102,17 @@ export function EventsListPage({ area, search }: { area: EventsArea; search: Eve
   )
 }
 
-function Filters({ area, search, venues }: { area: EventsArea; search: EventSearch; venues: Venue[] }) {
+function Filters({
+  area,
+  search,
+  venues,
+  venuesPending,
+}: {
+  area: EventsArea
+  search: EventSearch
+  venues: Venue[]
+  venuesPending: boolean
+}) {
   const navigate = useNavigate()
   const form = useForm<FilterFields>({ resolver: zodResolver(filterSchema), defaultValues: filterFields(search) })
   const { errors } = form.formState
@@ -135,22 +145,31 @@ function Filters({ area, search, venues }: { area: EventsArea; search: EventSear
       <Field id={`${area}-events-search`} label="Search" className="w-64">
         <Input type="search" autoComplete="off" {...form.register('search')} />
       </Field>
-      <Controller
-        control={form.control}
-        name="venueId"
-        render={({ field }) => (
-          <Field id={`${area}-events-venue`} label="Venue" className="w-56">
-            <NativeSelect {...field}>
-              <option value="">All venues</option>
-              {venues.map((venue) => (
-                <option key={venue.id} value={String(venue.id)}>
-                  {venue.name}
-                </option>
-              ))}
-            </NativeSelect>
-          </Field>
-        )}
-      />
+      {venuesPending ? (
+        // The select appears once its options have arrived (the table's venue names wait on the same request);
+        // until then, an announced placeholder rather than an empty-looking filter.
+        <div role="status" aria-label="Loading venues" className="w-56 space-y-2">
+          <p className="text-sm font-medium">Venue</p>
+          <Skeleton className="h-9 w-full" />
+        </div>
+      ) : (
+        <Controller
+          control={form.control}
+          name="venueId"
+          render={({ field }) => (
+            <Field id={`${area}-events-venue`} label="Venue" className="w-56">
+              <NativeSelect {...field}>
+                <option value="">All venues</option>
+                {venues.map((venue) => (
+                  <option key={venue.id} value={String(venue.id)}>
+                    {venue.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </Field>
+          )}
+        />
+      )}
       {showsTenant(area) && (
         <Field id={`${area}-events-tenant`} label="Tenant id" error={errors.tenantId?.message} className="w-40">
           <Input type="text" inputMode="numeric" autoComplete="off" {...form.register('tenantId')} />
@@ -193,7 +212,17 @@ function EmptyState({ area, search, pastTheEnd }: { area: EventsArea; search: Ev
   )
 }
 
-function EventsTable({ area, events, venues }: { area: EventsArea; events: EventRecord[]; venues: Venue[] }) {
+function EventsTable({
+  area,
+  events,
+  venues,
+  venuesPending,
+}: {
+  area: EventsArea
+  events: EventRecord[]
+  venues: Venue[]
+  venuesPending: boolean
+}) {
   const venueNames = new Map(venues.map((venue) => [venue.id, venue.name]))
   const withTenant = showsTenant(area)
   return (
@@ -223,7 +252,14 @@ function EventsTable({ area, events, venues }: { area: EventsArea; events: Event
             {withTenant && <TableCell>{event.tenantId ?? '—'}</TableCell>}
             <TableCell className="whitespace-nowrap">{formatEventTime(event.startTime)}</TableCell>
             <TableCell>
-              {event.venueId === null ? '—' : (venueNames.get(event.venueId) ?? `Venue ${event.venueId}`)}
+              {event.venueId === null ? (
+                '—'
+              ) : venuesPending ? (
+                // Announced by the Venue filter's "Loading venues" status.
+                <Skeleton className="h-4 w-24" />
+              ) : (
+                (venueNames.get(event.venueId) ?? `Venue ${event.venueId}`)
+              )}
             </TableCell>
             <TableCell className="whitespace-nowrap">{formatPrices(event.basePrice, event.coverPrice)}</TableCell>
           </TableRow>

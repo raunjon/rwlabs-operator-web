@@ -1,4 +1,4 @@
-import { keepPreviousData, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { UNREACHABLE_MESSAGE } from '@/features/auth/session-actions'
 import { NO_ACCESS_MESSAGE } from '@/features/team/invite'
 import { ApiError, NO_RESPONSE } from '@/lib/api/errors'
@@ -49,8 +49,8 @@ export const eventsQuery = (params: EventListParams) =>
   queryOptions({
     queryKey: [...EVENTS_KEY, 'list', params],
     queryFn: () => fetchEvents(params),
-    // Keep the current page on screen while the next one loads, instead of flashing the skeleton.
-    placeholderData: keepPreviousData,
+    // No placeholder data: after a page or filter change, the old rows would sit under the new URL and controls
+    // until the request settles. The list shows its loading skeleton instead.
   })
 
 export const eventQuery = (id: number) =>

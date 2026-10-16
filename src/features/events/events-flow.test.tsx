@@ -171,6 +171,49 @@ describe('the events list', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
+  it('while venues load, the venue filter and venue names are announced placeholders', async () => {
+    let releaseVenues!: () => void
+    const venuesReady = new Promise<void>((resolve) => (releaseVenues = resolve))
+    server.use(
+      http.get('*/operator/api/venues', async () => {
+        await venuesReady
+        return HttpResponse.json({ data: VENUES, success: true })
+      }),
+    )
+    mockList(() => onePage([gatewayEvent()]))
+    renderApp('/t/events')
+    expect(await screen.findByRole('link', { name: 'Friday Rooftop Mixer' })).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Loading venues' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Venue')).not.toBeInTheDocument()
+    expect(screen.queryByText(/^Venue \d+$/)).not.toBeInTheDocument()
+    releaseVenues()
+    expect(await screen.findByText('Skyline Rooftop', { selector: 'td' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Venue')).toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: 'Loading venues' })).not.toBeInTheDocument()
+  })
+
+  it('a page or filter change shows the loading skeleton, not the previous rows', async () => {
+    let releasePage2!: () => void
+    const page2Ready = new Promise<void>((resolve) => (releasePage2 = resolve))
+    mockList(async (url) => {
+      const page = Number(url.searchParams.get('page'))
+      if (page === 2) await page2Ready
+      return HttpResponse.json({
+        success: true,
+        data: [gatewayEvent({ id: page, title: `Event on page ${page}` })],
+        current_page: page,
+        total_pages: 2,
+        total_count: 26,
+      })
+    })
+    renderApp('/t/events')
+    await userEvent.click(await screen.findByRole('link', { name: 'Next page' }))
+    expect(await screen.findByRole('status', { name: 'Loading events' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Event on page 1' })).not.toBeInTheDocument()
+    releasePage2()
+    expect(await screen.findByRole('link', { name: 'Event on page 2' })).toBeInTheDocument()
+  })
+
   it('search and venue filters live in the URL and go to the server; Clear filters drops them', async () => {
     const urls = mockList(() => onePage([gatewayEvent()]))
     const router = renderApp('/t/events')
