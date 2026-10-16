@@ -420,6 +420,63 @@ describe('viewing and editing an event', () => {
     expect(bodies).toHaveLength(0)
   })
 
+  it('coming back to an event waits for its fresh copy before filling the form', async () => {
+    let title = 'Friday Rooftop Mixer'
+    let releaseSecondVisit!: () => void
+    const secondVisit = new Promise<void>((resolve) => (releaseSecondVisit = resolve))
+    let visits = 0
+    mockEvent(12, async () => {
+      visits += 1
+      if (visits > 1) await secondVisit
+      return HttpResponse.json({ data: gatewayEvent({ title }), success: true })
+    })
+    mockList(() => onePage([gatewayEvent()]))
+    const router = renderApp('/t/events/12')
+    expect(await screen.findByLabelText('Title')).toHaveValue('Friday Rooftop Mixer')
+
+    await userEvent.click(screen.getByRole('link', { name: 'All events' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Events' })).toBeInTheDocument()
+    title = 'Renamed by someone else'
+    router.history.back()
+
+    expect(await screen.findByRole('status', { name: 'Loading the event' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Title')).not.toBeInTheDocument()
+    releaseSecondVisit()
+    expect(await screen.findByLabelText('Title')).toHaveValue('Renamed by someone else')
+  })
+
+  it('once a save stores the first feature, removing it again is refused like any other', async () => {
+    mockEvent(12, () => HttpResponse.json({ data: gatewayEvent({ features: [] }), success: true }))
+    const bodies = captureBodies('patch', '*/operator/api/events/12', (body) =>
+      HttpResponse.json({ data: gatewayEvent({ features: body.features as string[] }), success: true }),
+    )
+    renderApp('/t/events/12')
+    await userEvent.type(await screen.findByLabelText('Features'), 'live band{Enter}')
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    expect(await screen.findByText('Event saved.')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Remove live band' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    expect(
+      await screen.findByText('Keep at least one feature: removing them all isn’t supported yet.'),
+    ).toBeInTheDocument()
+    expect(bodies).toHaveLength(1)
+  })
+
+  it('“Event saved.” goes away at the next edit', async () => {
+    mockEvent(12, () => HttpResponse.json({ data: gatewayEvent(), success: true }))
+    captureBodies('patch', '*/operator/api/events/12', (body) =>
+      HttpResponse.json({ data: gatewayEvent({ title: body.title }), success: true }),
+    )
+    renderApp('/t/events/12')
+    const title = await screen.findByLabelText('Title')
+    await userEvent.type(title, '!')
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    expect(await screen.findByText('Event saved.')).toBeInTheDocument()
+    await userEvent.type(title, '?')
+    expect(screen.queryByText('Event saved.')).not.toBeInTheDocument()
+  })
+
   it('a missing event says so and links back to the list', async () => {
     mockEvent(99, () => envelope(404, "Couldn't find Event with 'id'=99"))
     mockList(() => onePage([gatewayEvent()]))

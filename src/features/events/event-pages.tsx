@@ -80,8 +80,11 @@ function MissingEvent({ area }: { area: EventsArea }) {
 
 function EventDetail({ area, id }: { area: EventsArea; id: number }) {
   const event = useQuery(eventQuery(id))
+  // A cached copy (the admin was here before) is refetched on arrival. Wait for that answer: the form takes its
+  // starting values once, and a save sends every field, so a stale copy would overwrite newer changes.
+  const refreshing = event.isFetching && !event.isFetchedAfterMount
 
-  if (event.isPending) {
+  if (event.isPending || refreshing) {
     return (
       <div className="max-w-3xl space-y-6">
         <PageHeading area={area} title="Event" />
@@ -116,7 +119,9 @@ function EditEvent({ area, event }: { area: EventsArea; event: EventRecord }) {
   // Keeps the form's starting values from the event as it was when the page opened; a save refreshes the
   // heading but leaves the admin's form as they typed it.
   const [defaults] = useState(() => toFormFields(event))
-  const [keepFeatures] = useState(() => event.features.length > 0)
+  // From the latest saved event, not the opening one: once a save stores the first feature, it can't be cleared.
+  const keepFeatures = event.features.length > 0
+  const { isSuccess: saved, reset: resetUpdate } = update
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -134,8 +139,10 @@ function EditEvent({ area, event }: { area: EventsArea; event: EventRecord }) {
         busy={update.isPending}
         failure={update.isError ? eventFailure(update.error) : null}
         onSubmit={(fields) => update.mutate(toEventInput(fields))}
+        // "Event saved." describes the form as it was sent; the first edit after that makes it untrue.
+        onEdit={saved ? resetUpdate : undefined}
         footer={
-          update.isSuccess && (
+          saved && (
             <p role="status" className="text-sm text-success">
               Event saved.
             </p>

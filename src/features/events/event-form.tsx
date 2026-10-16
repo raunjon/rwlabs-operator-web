@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
-import { useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -32,6 +32,7 @@ export function EventForm({
   busy,
   failure,
   onSubmit,
+  onEdit,
   footer,
 }: {
   idPrefix: string
@@ -43,6 +44,8 @@ export function EventForm({
   busy: boolean
   failure: EventFailure | null
   onSubmit: (fields: EventFormFields) => void
+  // Called on every change to a field's value.
+  onEdit?: () => void
   footer?: ReactNode
 }) {
   const venues = useQuery(venuesQuery)
@@ -55,6 +58,11 @@ export function EventForm({
   const tenantFailure = askTenant && failure?.kind === 'tenant-required' ? failure.message : undefined
   const formFailure = failure && !tenantFailure ? failure.message : null
   const id = (name: string) => `${idPrefix}-${name}`
+
+  useEffect(() => {
+    if (!onEdit) return
+    return form.subscribe({ formState: { values: true }, callback: () => onEdit() })
+  }, [form, onEdit])
 
   function submit(fields: EventFormFields) {
     if (keepFeatures && fields.features.length === 0) {
