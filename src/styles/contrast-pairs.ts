@@ -42,4 +42,6 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
   ui('input', 'card'),
   ui('ring', 'background'),
   ui('ring', 'card'),
+  // A checked checkbox (accent-primary): the venue form's Active.
+  ui('primary', 'background'),
 ]

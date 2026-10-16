@@ -1,9 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { Controller, useForm } from 'react-hook-form'
+import { ChipInput } from '@/components/chip-input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -165,8 +165,11 @@ export function EventForm({
           control={form.control}
           name="features"
           render={({ field }) => (
-            <FeaturesInput
+            <ChipInput
               id={id('features')}
+              label="Features"
+              noun="feature"
+              listLabel="Added features"
               value={field.value}
               onChange={(features) => {
                 field.onChange(features)
@@ -190,66 +193,5 @@ export function EventForm({
         {footer}
       </div>
     </form>
-  )
-}
-
-// A chip input: type a feature and press Enter (or Add feature); each one shows as a removable chip.
-function FeaturesInput({
-  id,
-  value,
-  onChange,
-  error,
-}: {
-  id: string
-  value: string[]
-  onChange: (features: string[]) => void
-  error?: string
-}) {
-  const [draft, setDraft] = useState('')
-
-  function add() {
-    const feature = draft.trim()
-    if (feature && !value.includes(feature)) onChange([...value, feature])
-    setDraft('')
-  }
-
-  function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    // Enter adds the feature instead of submitting the whole form.
-    if (event.key === 'Enter') {
-      event.preventDefault()
-      add()
-    }
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-start gap-2">
-        <Field id={id} label="Features" hint="Press Enter or Add feature after each one." error={error} className="flex-1">
-          <Input type="text" autoComplete="off" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKeyDown} />
-        </Field>
-        <Button type="button" variant="outline" onClick={add} className="mt-7">
-          Add feature
-        </Button>
-      </div>
-      {value.length > 0 && (
-        <ul aria-label="Added features" className="flex flex-wrap gap-2">
-          {value.map((feature) => (
-            <li key={feature}>
-              <Badge variant="secondary" className="gap-1 py-1 pr-1">
-                <span>{feature}</span>
-                <button
-                  type="button"
-                  aria-label={`Remove ${feature}`}
-                  onClick={() => onChange(value.filter((f) => f !== feature))}
-                  className="rounded-full px-1 leading-none hover:bg-accent hover:text-accent-foreground"
-                >
-                  ×
-                </button>
-              </Badge>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   )
 }
